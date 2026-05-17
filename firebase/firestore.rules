@@ -1,0 +1,127 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsUserDoc(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow read, update, delete: if ownsUserDoc(userId);
+      allow create: if ownsUserDoc(userId);
+
+      match /savedListings/{listingId} {
+        allow read, delete: if ownsUserDoc(userId);
+        allow create: if ownsUserDoc(userId)
+          && request.resource.data.listingId == listingId
+          && request.resource.data.listingTitle is string
+          && request.resource.data.listingTitle.size() > 0
+          && request.resource.data.listingTitle.size() <= 120;
+        allow update: if false;
+      }
+    }
+
+    match /listings/{listingId} {
+      allow read: if resource.data.status == "active" || resource.data.publisherId == request.auth.uid;
+      // יצירה כטיוטה או active. עדכון: בעל המודעה רשאי (כולל מעבר draft→active לפני מנגנון תשלום בשרת).
+      allow create: if signedIn()
+        && request.resource.data.publisherId == request.auth.uid
+        && (request.resource.data.status == "draft"
+          || request.resource.data.status == "active");
+      allow update: if signedIn()
+        && resource.data.publisherId == request.auth.uid
+        && request.resource.data.publisherId == resource.data.publisherId;
+      allow delete: if signedIn() && resource.data.publisherId == request.auth.uid;
+    }
+
+    match /listingReports/{reportId} {
+      allow create: if signedIn()
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.listingId is string
+        && request.resource.data.listingTitle is string
+        && request.resource.data.reason is string
+        && (!("otherDetails" in request.resource.data)
+          || (request.resource.data.otherDetails is string
+            && request.resource.data.otherDetails.size() <= 100));
+      allow read, update, delete: if false;
+    }
+
+    match /chatThreads/{threadId} {
+      // מסמך לא קיים: מאפשרים getDoc לפני setDoc (יצירת שרשור).
+      // מסמך קיים: רק resource — כך שאילתת list + array-contains מאומתת מול הנתונים של אותו מסמך (לא get() שעלול לכשל בחלק מההערכות).
+      allow read: if signedIn() && (
+        !exists(/databases/$(database)/documents/chatThreads/$(threadId))
+        || request.auth.uid in resource.data.participantIds
+      );
+
+      allow create: if signedIn()
+        && request.auth.uid in request.resource.data.participantIds
+        && request.resource.data.participantIds.size() == 2
+        && request.resource.data.listingId is string
+        && request.resource.data.listingTitle is string;
+
+      allow update: if signedIn()
+        && request.auth.uid in resource.data.participantIds
+        && request.resource.data.participantIds == resource.data.participantIds
+        && request.resource.data.listingId == resource.data.listingId;
+
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if signedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/chatThreads/$(threadId)).data.participantIds;
+
+        allow create: if signedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/chatThreads/$(threadId)).data.participantIds
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000;
+        allow update, delete: if false;
+      }
+    }
+
+    match /payments/{paymentId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /streetNeighborhoodHints/{streetPlaceId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    match /neighborhoodCandidates/{candidateId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    match /learnedNeighborhoods/{hoodId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.userId is string
+        && request.resource.data.fromUserId == request.auth.uid
+        && request.resource.data.fromUserId != request.resource.data.userId
+        && request.resource.data.read == false
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 120
+        && request.resource.data.body is string
+        && request.resource.data.body.size() <= 300
+        && request.resource.data.kind is string;
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

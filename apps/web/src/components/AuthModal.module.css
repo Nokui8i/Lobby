@@ -1,0 +1,227 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  background: rgba(16, 24, 32, 0.28);
+  backdrop-filter: blur(10px);
+}
+
+.panel {
+  direction: rtl;
+  width: min(100%, 360px);
+  padding: 16px 16px 14px;
+  border: 1px solid rgba(16, 24, 32, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 18px 56px rgba(16, 24, 32, 0.16);
+  /* בסיס אחיד — כפתורים/שדות עם font: inherit לא ייראו מוגזמים */
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.header {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--foreground);
+}
+
+.header p {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--muted);
+  line-height: 1.45;
+  max-width: 26em;
+}
+
+.close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: #f1eee7;
+  font-size: 1.125rem;
+  line-height: 1;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: #e8e4dc;
+}
+
+.form {
+  margin: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.modeToggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.modeToggle button {
+  padding: 8px 10px;
+  border: 1px solid rgba(16, 24, 32, 0.1);
+  border-radius: 11px;
+  background: #f7f6f2;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+  color: var(--foreground);
+}
+
+.modeToggle button:not(.modeActive) {
+  color: var(--ink-soft);
+}
+
+.modeActive {
+  border-color: rgba(8, 184, 200, 0.45) !important;
+  background: rgba(8, 184, 200, 0.12) !important;
+  color: #065a63;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.field span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.field input {
+  padding: 9px 11px;
+  border: 1px solid rgba(16, 24, 32, 0.12);
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  background: #fff;
+  color: var(--foreground);
+}
+
+.field input:focus {
+  outline: none;
+  border-color: rgba(8, 184, 200, 0.55);
+  box-shadow: 0 0 0 2px rgba(8, 184, 200, 0.15);
+}
+
+.error {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(220, 53, 69, 0.08);
+  color: #a21e2e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.submit {
+  width: 100%;
+  margin-top: 4px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--foreground);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.google {
+  width: 100%;
+  margin-top: 2px;
+  padding: 10px 12px;
+  border: 1px solid rgba(16, 24, 32, 0.14);
+  border-radius: 12px;
+  background: #fff;
+  color: #101820;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.google:hover:not(:disabled) {
+  background: #fafaf8;
+}
+
+.google:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 2px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(16, 24, 32, 0.1);
+}
+
+.legalNotice {
+  margin: 10px 0 0;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--muted);
+  text-align: center;
+}
+
+.legalLink {
+  color: #065a63;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.legalLink:hover {
+  color: #043a40;
+}

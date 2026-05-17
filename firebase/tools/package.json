@@ -1,0 +1,14 @@
+{
+  "name": "lobby-firebase-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed:dev-listing": "node scripts/seedDevListingForEmail.mjs",
+    "seed:admin-demo": "node scripts/seedAdminDemo.mjs",
+    "delete:dev-listing": "node scripts/deleteDevListing.mjs",
+    "set-staff-claim": "node scripts/setStaffClaim.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}

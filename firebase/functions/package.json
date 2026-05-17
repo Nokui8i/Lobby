@@ -1,0 +1,13 @@
+{
+  "name": "lobby-functions",
+  "private": true,
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.1",
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^6.6.0"
+  }
+}

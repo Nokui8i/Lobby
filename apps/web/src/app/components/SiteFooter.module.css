@@ -1,0 +1,101 @@
+.footer {
+  padding: 0 18px;
+  color: #fff;
+  background: var(--background);
+}
+
+.inner {
+  display: grid;
+  gap: 20px;
+  width: 100%;
+  max-width: none;
+  margin: 26px auto 0;
+  padding: clamp(22px, 4vw, 34px) clamp(16px, 3vw, 48px);
+  border-radius: 32px 32px 0 0;
+  background:
+    radial-gradient(circle at 14% 0%, rgba(8, 184, 200, 0.2), transparent 28%),
+    #101820;
+  box-shadow: 0 -16px 60px rgba(16, 24, 32, 0.1);
+}
+
+.brand {
+  display: grid;
+  gap: 8px;
+  max-width: 720px;
+}
+
+.brand strong {
+  color: var(--brand);
+  font-size: 28px;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.brand p,
+.columns p,
+.finePrint {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.columns section {
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.columns h2 {
+  margin: 0 0 8px;
+  color: #fff;
+  font-size: 15px;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.linkPill {
+  display: inline-block;
+  padding: 7px 10px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.linkPill:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.finePrint {
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 820px) {
+  .footer {
+    padding: 0;
+  }
+
+  .inner {
+    border-radius: 28px 28px 0 0;
+  }
+
+  .columns {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,127 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 260px;
+  min-height: 100vh;
+  padding: 20px 16px;
+  border-left: 1px solid var(--line);
+  background: var(--card);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.brandMark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--brand), var(--brand-strong));
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.brandTitle {
+  display: block;
+  font-size: 1.05rem;
+  letter-spacing: -0.03em;
+}
+
+.brandSub {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.roleBadge {
+  display: inline-block;
+  margin-bottom: 20px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.nav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.navLink:hover {
+  background: #f3f1eb;
+}
+
+.navLinkActive {
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+}
+
+.navLinkSoon {
+  opacity: 0.72;
+  cursor: default;
+}
+
+.soonTag {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f1eee7;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.footer {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.userEmail {
+  margin-bottom: 10px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.logoutBtn {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-radius: 12px;
+  background: #fff;
+  color: #b91c1c;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.logoutBtn:hover {
+  background: #fef2f2;
+}
