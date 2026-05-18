@@ -196,7 +196,8 @@ export default function AdminStaffPage() {
         title="לעדכן תפקיד?"
         description={
           <p>
-            {pending?.user.displayName} יקבל תפקיד {pending ? STAFF_ROLE_LABELS[pending.role] : ""} במערכת הניהול.
+            {pending?.user.displayName} יקבל תפקיד{" "}
+            {pending?.type === "set_role" ? STAFF_ROLE_LABELS[pending.role] : ""} במערכת הניהול.
             יידרש להתנתק ולהתחבר מחדש כדי שההרשאות ייכנסו לתוקף.
           </p>
         }

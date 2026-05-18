@@ -6,6 +6,12 @@ const monorepoRoot = path.resolve(__dirname, "../..");
 const nextConfig: NextConfig = {
   outputFileTracingRoot: monorepoRoot,
   transpilePackages: ["@lobby/shared"],
+  turbopack: {
+    resolveAlias: {
+      "@lobby/shared": "../../packages/shared/src/index.ts",
+      "@swc/helpers": "../../node_modules/@swc/helpers",
+    },
+  },
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,

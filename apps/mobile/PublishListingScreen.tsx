@@ -36,6 +36,7 @@ import {
 } from "@lobby/shared";
 import { ensureFirestoreAuthReady } from "./lib/firebase/client";
 import { fetchListingByIdFromFirestore } from "./lib/firebase/listingQueries";
+import { submitListingForReview } from "./lib/firebase/listingModeration";
 import { isFirebaseConfigured } from "./lib/firebase/isConfigured";
 import {
   listingPublishStatusForNewSave,
@@ -144,6 +145,8 @@ export function PublishListingScreen({
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [sentForModerationReview, setSentForModerationReview] = useState(false);
+  const [requiresModerationResubmit, setRequiresModerationResubmit] = useState(false);
 
   const toggleFeature = useCallback((key: PropertyFeature) => {
     setFeatures((prev) => (prev.includes(key) ? prev.filter((f) => f !== key) : [...prev, key]));
@@ -236,6 +239,11 @@ export function PublishListingScreen({
           setEditLoadError("מודעה זו לא ניתנת לעריכה.");
           return;
         }
+        if (listing.status === "pending_review") {
+          setEditLoadError("המודעה כבר נשלחה לבדיקת הצוות.");
+          return;
+        }
+        setRequiresModerationResubmit(listing.moderationAction === "returned_to_draft");
         const seed = rentalListingToPublishFormSeed(listing);
         setTitle(seed.title);
         setResolvedLocation(rentalListingToResolvedLocation(listing));
@@ -513,6 +521,11 @@ export function PublishListingScreen({
 
       if (isEditMode) {
         await updateListing(payload);
+        if (requiresModerationResubmit) {
+          setProgress("שולחים לבדיקת הצוות…");
+          await submitListingForReview(listingId);
+          setSentForModerationReview(true);
+        }
       } else {
         await saveListingDraft(payload);
       }
@@ -552,6 +565,7 @@ export function PublishListingScreen({
     editListingId,
     existingVideo,
     videoRemoved,
+    requiresModerationResubmit,
   ]);
 
   if (!isFirebaseConfigured()) {
@@ -796,7 +810,9 @@ export function PublishListingScreen({
                     ? "מפרסמים…"
                     : "שומרים…"
                 : isEditMode
-                  ? "שמירת שינויים"
+                  ? requiresModerationResubmit
+                    ? "שמירה ושליחה לבדיקה"
+                    : "שמירת שינויים"
                   : publishAsActive
                     ? "פרסום לפיד"
                     : "שמירת טיוטה"}
@@ -807,11 +823,13 @@ export function PublishListingScreen({
           {savedId ? (
             <View style={styles.successBox}>
               <Text style={styles.successText}>
-                {isEditMode
-                  ? "השינויים נשמרו."
-                  : publishAsActive
-                    ? "המודעה פורסמה בפיד."
-                    : "הטיוטה נשמרה. המודעה עדיין לא ציבורית."}
+                {sentForModerationReview
+                  ? "המודעה נשלחה לבדיקת הצוות. זמן הפרסום נשמר."
+                  : isEditMode
+                    ? "השינויים נשמרו."
+                    : publishAsActive
+                      ? "המודעה פורסמה בפיד."
+                      : "הטיוטה נשמרה. המודעה עדיין לא ציבורית."}
               </Text>
               <Text style={styles.successId}>מזהה: {savedId}</Text>
             </View>

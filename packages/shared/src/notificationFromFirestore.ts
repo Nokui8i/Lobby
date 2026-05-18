@@ -1,4 +1,8 @@
-import type { LobbyInAppNotification, LobbyNotificationKind } from "./notifications";
+import type {
+  LobbyInAppNotification,
+  LobbyNotificationKind,
+  LobbyNotificationListingTarget,
+} from "./notifications";
 import { firestoreTimestampToMillis } from "./chatFormat";
 
 const VALID_KINDS = new Set<LobbyNotificationKind>([
@@ -6,6 +10,9 @@ const VALID_KINDS = new Set<LobbyNotificationKind>([
   "listing_expiring",
   "listing_expired",
   "listing_published",
+  "support_message",
+  "support_closed",
+  "support_resolved",
   "system",
 ]);
 
@@ -30,6 +37,10 @@ export function notificationFromFirestorePayload(
     ? (kindRaw as LobbyNotificationKind)
     : "system";
 
+  const listingTargetRaw = asString(data.listingTarget);
+  const listingTarget: LobbyNotificationListingTarget | undefined =
+    listingTargetRaw === "publish" || listingTargetRaw === "view" ? listingTargetRaw : undefined;
+
   return {
     id: docId,
     userId,
@@ -40,6 +51,9 @@ export function notificationFromFirestorePayload(
     read: data.read === true,
     createdAtMs: firestoreTimestampToMillis(data.createdAt),
     threadId: asString(data.threadId) || undefined,
+    supportInquiryId:
+      asString(data.supportInquiryId) || (kind.startsWith("support") ? asString(data.threadId) : "") || undefined,
     listingId: asString(data.listingId) || undefined,
+    listingTarget,
   };
 }

@@ -15,14 +15,14 @@ function AuthModalHost() {
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <LobbyAuthProvider>
-      <ChatInboxProvider>
-        <LobbyNotificationsProvider>
-          <SavedListingsProvider>
+      <SavedListingsProvider>
+        <ChatInboxProvider>
+          <LobbyNotificationsProvider>
             {children}
             <AuthModalHost />
-          </SavedListingsProvider>
-        </LobbyNotificationsProvider>
-      </ChatInboxProvider>
+          </LobbyNotificationsProvider>
+        </ChatInboxProvider>
+      </SavedListingsProvider>
     </LobbyAuthProvider>
   );
 }

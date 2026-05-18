@@ -173,6 +173,9 @@ exports.onListingUpdated = onDocumentUpdated(
   const title = typeof after.title === "string" ? after.title : "המודעה שלך";
 
   if (before.status !== "active" && after.status === "active" && publisherId) {
+    if (before.status === "pending_review") {
+      return;
+    }
     const db = getFirestore();
     await createInAppNotification(db, {
       userId: publisherId,
@@ -323,6 +326,47 @@ exports.lobbyAdminModerateListingFromReport = onCall(placesCallOptions, async (r
   return adminModerateListingFromReportHandler(request);
 });
 
+const {
+  submitListingForReviewHandler,
+  adminListPendingListingsHandler,
+  adminDecidePendingListingHandler,
+} = require("./listingModeration");
+
+exports.lobbySubmitListingForReview = onCall(placesCallOptions, async (request) => {
+  return submitListingForReviewHandler(request);
+});
+
+exports.lobbyAdminListPendingListings = onCall(placesCallOptions, async (request) => {
+  return adminListPendingListingsHandler(request);
+});
+
+exports.lobbyAdminDecidePendingListing = onCall(placesCallOptions, async (request) => {
+  return adminDecidePendingListingHandler(request);
+});
+
+const {
+  adminListListingsHandler,
+  adminGetListingHandler,
+  adminUpdateListingHandler,
+  adminModerateListingHandler,
+} = require("./adminListings");
+
+exports.lobbyAdminListListings = onCall(placesCallOptions, async (request) => {
+  return adminListListingsHandler(request);
+});
+
+exports.lobbyAdminGetListing = onCall(placesCallOptions, async (request) => {
+  return adminGetListingHandler(request);
+});
+
+exports.lobbyAdminUpdateListing = onCall(placesCallOptions, async (request) => {
+  return adminUpdateListingHandler(request);
+});
+
+exports.lobbyAdminModerateListing = onCall(placesCallOptions, async (request) => {
+  return adminModerateListingHandler(request);
+});
+
 exports.lobbyAdminSearchUsers = onCall(placesCallOptions, async (request) => {
   return adminSearchUsersHandler(request);
 });
@@ -355,26 +399,84 @@ exports.lobbyAdminRevokeStaffRole = onCall(placesCallOptions, async (request) =>
   return adminRevokeStaffRoleHandler(request);
 });
 
-async function deleteChatMessagesBatch(threadRef) {
-  const db = threadRef.firestore;
-  let deleted = 0;
-  while (true) {
-    const msgSnap = await threadRef.collection("messages").limit(400).get();
-    if (msgSnap.empty) {
-      break;
-    }
-    const batch = db.batch();
-    for (const msgDoc of msgSnap.docs) {
-      batch.delete(msgDoc.ref);
-    }
-    await batch.commit();
-    deleted += msgSnap.size;
-    if (msgSnap.size < 400) {
-      break;
-    }
-  }
-  return deleted;
-}
+const {
+  submitSupportInquiryHandler,
+  sendSupportInquiryMessageHandler,
+  closeSupportInquiryHandler,
+  markSupportInquiryResolvedHandler,
+  reopenSupportInquiryHandler,
+  claimSupportInquiryHandler,
+  markSupportInquiryReadHandler,
+  listMySupportInquiriesHandler,
+  adminListSupportInquiriesHandler,
+  adminUpdateSupportInquiryHandler,
+  adminResolveSupportInquiryHandler,
+  deleteMySupportInquiryHandler,
+  deleteSupportInquiryMessages,
+} = require("./supportInquiries");
+
+exports.lobbySubmitSupportInquiry = onCall(placesCallOptions, async (request) => {
+  return submitSupportInquiryHandler(request);
+});
+
+exports.lobbyListMySupportInquiries = onCall(placesCallOptions, async (request) => {
+  return listMySupportInquiriesHandler(request);
+});
+
+exports.lobbySendSupportInquiryMessage = onCall(placesCallOptions, async (request) => {
+  return sendSupportInquiryMessageHandler(request);
+});
+
+exports.lobbyCloseSupportInquiry = onCall(placesCallOptions, async (request) => {
+  return closeSupportInquiryHandler(request);
+});
+
+exports.lobbyMarkSupportInquiryResolved = onCall(placesCallOptions, async (request) => {
+  return markSupportInquiryResolvedHandler(request);
+});
+
+exports.lobbyMarkSupportInquiryRead = onCall(placesCallOptions, async (request) => {
+  return markSupportInquiryReadHandler(request);
+});
+
+exports.lobbyDeleteMyChatThread = onCall(placesCallOptions, async (request) => {
+  return deleteMyChatThreadHandler(request);
+});
+
+exports.lobbyDeleteMySupportInquiry = onCall(placesCallOptions, async (request) => {
+  return deleteMySupportInquiryHandler(request);
+});
+
+exports.lobbyAdminListSupportInquiries = onCall(placesCallOptions, async (request) => {
+  return adminListSupportInquiriesHandler(request);
+});
+
+exports.lobbyAdminUpdateSupportInquiry = onCall(placesCallOptions, async (request) => {
+  return adminUpdateSupportInquiryHandler(request);
+});
+
+exports.lobbyAdminResolveSupportInquiry = onCall(placesCallOptions, async (request) => {
+  return adminResolveSupportInquiryHandler(request);
+});
+
+exports.lobbyAdminSendSupportInquiryMessage = onCall(placesCallOptions, async (request) => {
+  return sendSupportInquiryMessageHandler(request);
+});
+
+exports.lobbyAdminCloseSupportInquiry = onCall(placesCallOptions, async (request) => {
+  return closeSupportInquiryHandler(request);
+});
+
+exports.lobbyAdminReopenSupportInquiry = onCall(placesCallOptions, async (request) => {
+  return reopenSupportInquiryHandler(request);
+});
+
+exports.lobbyAdminClaimSupportInquiry = onCall(placesCallOptions, async (request) => {
+  return claimSupportInquiryHandler(request);
+});
+
+const { deleteChatMessagesBatch } = require("./chatMessagesBatch");
+const { deleteMyChatThreadHandler } = require("./chatThreads");
 
 exports.cleanupOldNotifications = onSchedule(
   { schedule: "every 24 hours", region: "us-central1" },
@@ -429,6 +531,41 @@ exports.cleanupOldChatThreads = onSchedule(
 
     if (threadsDeleted > 0) {
       console.log("cleanupOldChatThreads", { threadsDeleted, messagesDeleted });
+    }
+  },
+);
+
+exports.cleanupOldSupportInquiries = onSchedule(
+  { schedule: "every 24 hours", region: "us-central1" },
+  async () => {
+    const db = getFirestore();
+    const cutoffMs = Date.now() - 365 * MS_DAY;
+    const snap = await db
+      .collection("supportInquiries")
+      .orderBy("updatedAt", "asc")
+      .limit(200)
+      .get();
+
+    let inquiriesDeleted = 0;
+    let messagesDeleted = 0;
+
+    for (const inquiryDoc of snap.docs) {
+      const data = inquiryDoc.data();
+      const activityMs = Math.max(
+        timestampToMillis(data.updatedAt),
+        timestampToMillis(data.closedAt),
+        timestampToMillis(data.createdAt),
+      );
+      if (activityMs <= 0 || activityMs >= cutoffMs) {
+        continue;
+      }
+      messagesDeleted += await deleteSupportInquiryMessages(inquiryDoc.ref);
+      await inquiryDoc.ref.delete();
+      inquiriesDeleted += 1;
+    }
+
+    if (inquiriesDeleted > 0) {
+      console.log("cleanupOldSupportInquiries", { inquiriesDeleted, messagesDeleted });
     }
   },
 );

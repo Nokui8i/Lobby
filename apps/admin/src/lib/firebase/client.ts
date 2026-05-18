@@ -1,5 +1,5 @@
 import { getApps, initializeApp, type FirebaseApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, type User } from "firebase/auth";
 import { type Firestore, getFirestore, initializeFirestore } from "firebase/firestore";
 import { isFirebaseConfigured } from "./isConfigured";
 
@@ -42,4 +42,14 @@ export function getFirestoreDb(): Firestore {
 
 export function getFirebaseAuth() {
   return getAuth(getFirebaseApp());
+}
+
+/** מחדש JWT עם staffRole לפני מאזיני Firestore — מונע permission-denied באדמין. */
+export async function ensureAdminFirestoreAuthReady(user: User): Promise<void> {
+  const auth = getFirebaseAuth();
+  await auth.authStateReady();
+  if (auth.currentUser?.uid !== user.uid) {
+    return;
+  }
+  await user.getIdToken(true);
 }

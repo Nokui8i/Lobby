@@ -8,9 +8,13 @@ import { registerForPushNotificationsAsync } from "./hooks/pushRegistration";
 
 export function SettingsScreen({
   onClose,
+  onOpenContact,
+  onOpenSupport,
   onPushEnabled,
 }: {
   onClose: () => void;
+  onOpenContact?: () => void;
+  onOpenSupport?: () => void;
   onPushEnabled?: () => void;
 }) {
   const { user, loading, openAuthModal } = useLobbyAuth();
@@ -118,6 +122,18 @@ export function SettingsScreen({
           />
         </View>
       </View>
+      {onOpenSupport ? (
+        <Pressable style={styles.linkCard} onPress={onOpenSupport} accessibilityRole="button">
+          <Text style={styles.rowLabel}>הפניות שלי</Text>
+          <Text style={styles.rowHint}>שיחות עם צוות התמיכה</Text>
+        </Pressable>
+      ) : null}
+      {onOpenContact ? (
+        <Pressable style={styles.linkCard} onPress={onOpenContact} accessibilityRole="button">
+          <Text style={styles.rowLabel}>פנייה חדשה</Text>
+          <Text style={styles.rowHint}>יצירת קשר עם צוות Lobby</Text>
+        </Pressable>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -162,4 +178,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   primaryBtnText: { color: "#fff", fontWeight: "900", fontSize: 15 },
+  linkCard: {
+    marginHorizontal: 14,
+    marginTop: 4,
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "rgba(16,24,32,0.08)",
+    backgroundColor: "#fff",
+  },
 });

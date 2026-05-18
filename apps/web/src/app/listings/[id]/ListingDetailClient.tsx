@@ -18,16 +18,26 @@ import styles from "./page.module.css";
 
 interface ListingDetailClientProps {
   listingId: string;
+  /** מודעה פעילה שנטענה בשרת; null = לא נמצאה בציבור — עדיין ננסה בלקוח (טיוטה של בעלים). */
+  initialListing?: RentalListing | null;
 }
 
-export function ListingDetailClient({ listingId }: ListingDetailClientProps) {
+export function ListingDetailClient({ listingId, initialListing }: ListingDetailClientProps) {
   const router = useRouter();
   const { user, openAuthModal } = useLobbyAuth();
-  const [listing, setListing] = useState<RentalListing | null | undefined>(undefined);
+  const [listing, setListing] = useState<RentalListing | null | undefined>(() =>
+    initialListing ? initialListing : undefined,
+  );
   const [chatBusy, setChatBusy] = useState(false);
   const [chatHint, setChatHint] = useState<string | null>(null);
 
   useEffect(() => {
+    if (initialListing) {
+      return;
+    }
+
+    setListing(undefined);
+
     let cancelled = false;
 
     async function load() {
@@ -63,7 +73,7 @@ export function ListingDetailClient({ listingId }: ListingDetailClientProps) {
     return () => {
       cancelled = true;
     };
-  }, [listingId]);
+  }, [listingId, initialListing]);
 
   if (listing === undefined) {
     return (
@@ -83,8 +93,17 @@ export function ListingDetailClient({ listingId }: ListingDetailClientProps) {
 
   const activeListing = listing;
   const isPublicActive = activeListing.status === "active";
+  const isOwner =
+    Boolean(user?.uid) &&
+    activeListing.publisher.id !== "unknown" &&
+    user?.uid === activeListing.publisher.id;
+  const ownerCanEditDraft =
+    isOwner && activeListing.status === "draft" && Boolean(activeListing.moderationDraftNote?.trim());
 
   function statusBannerText(): string | null {
+    if (activeListing.status === "pending_review") {
+      return "המודעה נשלחה לבדיקת הצוות — לא מוצגת בפיד עד לאישור. זמן הפרסום לא מתקצר בזמן ההמתנה.";
+    }
     if (activeListing.status === "draft") {
       if (activeListing.moderationDraftNote?.trim()) {
         return `נדרש עדכון מהצוות: ${activeListing.moderationDraftNote.trim()}`;
@@ -180,6 +199,18 @@ export function ListingDetailClient({ listingId }: ListingDetailClientProps) {
           <p className={styles.draftBanner} role="status">
             {listingStatusNote}
           </p>
+        ) : null}
+
+        {ownerCanEditDraft ? (
+          <div className={styles.ownerEditBar}>
+            <button
+              type="button"
+              className={styles.ownerEditButton}
+              onClick={() => router.push(`/publish?listingId=${activeListing.id}`)}
+            >
+              עריכת המודעה
+            </button>
+          </div>
         ) : null}
 
         <ListingGallery

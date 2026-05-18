@@ -1,4 +1,4 @@
-import { ChatThreadClient } from "../ChatThreadClient";
+import { MessagesThreadClient } from "../MessagesThreadClient";
 
 interface ChatThreadPageProps {
   params: Promise<{ threadId: string }>;
@@ -7,5 +7,5 @@ interface ChatThreadPageProps {
 export default async function ChatThreadPage({ params }: ChatThreadPageProps) {
   const { threadId } = await params;
 
-  return <ChatThreadClient threadId={threadId} />;
+  return <MessagesThreadClient routeId={threadId} />;
 }

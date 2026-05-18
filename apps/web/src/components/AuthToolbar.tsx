@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useLobbyAuth } from "@/contexts/LobbyAuthContext";
-import { useChatInbox } from "@/contexts/ChatInboxContext";
+import { useChatInboxOptional } from "@/contexts/ChatInboxContext";
 import { useLobbyNotificationsOptional } from "@/contexts/LobbyNotificationsContext";
 import { isFirebaseConfigured } from "@/lib/firebase/isConfigured";
 import { SavedListingsNav } from "./SavedListingsNav";
@@ -31,7 +31,8 @@ function NotificationsNavLink() {
 }
 
 function MessagesNavLink() {
-  const { totalUnread } = useChatInbox();
+  const inbox = useChatInboxOptional();
+  const totalUnread = inbox?.totalUnread ?? 0;
   const count = totalUnread > 99 ? "99+" : String(totalUnread);
 
   return (
@@ -60,8 +61,14 @@ export function AuthToolbar({ variant = "home" }: AuthToolbarProps) {
 
   if (loading) {
     return (
-      <div className={variant === "listing" ? styles.listingCluster : styles.homeCluster}>
-        <span className={styles.muted}>טוען…</span>
+      <div
+        className={variant === "listing" ? styles.listingCluster : styles.homeCluster}
+        role="status"
+        aria-busy="true"
+        aria-label="טוען תפריט"
+      >
+        <span className={styles.skeletonLink} />
+        <span className={styles.skeletonLink} />
       </div>
     );
   }

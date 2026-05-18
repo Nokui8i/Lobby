@@ -35,6 +35,19 @@
   cursor: not-allowed;
 }
 
+.listingsLink {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(8, 184, 200, 0.35);
+  background: rgba(8, 184, 200, 0.08);
+  color: var(--brand-strong);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
 .bannedBadge {
   display: inline-block;
   margin-bottom: 8px;

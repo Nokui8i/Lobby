@@ -16,7 +16,9 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { id: "dashboard", href: "/", label: "לוח בקרה" },
   { id: "reports", href: "/reports", label: "דיווחים" },
+  { id: "listings", href: "/listings", label: "מודעות" },
   { id: "users", href: "/users", label: "לקוחות" },
+  { id: "inquiries", href: "/inquiries", label: "פניות" },
   { id: "staff", href: "/staff", label: "צוות" },
   { id: "site", href: "/site", label: "תוכן ושיווק", soon: true },
 ];

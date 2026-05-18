@@ -2,6 +2,9 @@ const { HttpsError } = require("firebase-functions/v2/https");
 const { getAuth } = require("firebase-admin/auth");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 
+const { computePublishRemainingMs } = require("./listingPublishTime");
+const { buildModerationUpdateNotificationBody } = require("./notificationCopy");
+
 const ADMIN_MODERATION_DRAFT_NOTE_MAX = 500;
 const REPORT_REASON_LABELS = {
   broker_fee_requested: "דרשו ממני דמי תיווך",
@@ -43,11 +46,43 @@ async function adminResolveMyStaffRoleHandler(request) {
   if (!request.auth?.uid) {
     throw new HttpsError("permission-denied", "לא מחובר.");
   }
-  const role = staffRoleFromAuth(request.auth);
+  const uid = request.auth.uid;
+  let role = staffRoleFromAuth(request.auth);
   if (!role) {
     throw new HttpsError("permission-denied", "אין הרשאת צוות.");
   }
-  return { role };
+
+  const db = getFirestore();
+  const userRef = db.collection("users").doc(uid);
+  const userSnap = await userRef.get();
+  const profileRole =
+    userSnap.exists && typeof userSnap.data()?.staffRole === "string"
+      ? userSnap.data().staffRole
+      : "";
+  if (
+    (profileRole === "moderator" || profileRole === "admin" || profileRole === "owner") &&
+    ROLE_RANK[profileRole] > ROLE_RANK[role]
+  ) {
+    role = profileRole;
+  }
+
+  await userRef.set(
+    {
+      staffRole: role,
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
+
+  const auth = getAuth();
+  const authUser = await auth.getUser(uid);
+  const claims = { ...(authUser.customClaims ?? {}) };
+  if (claims.staffRole !== role) {
+    claims.staffRole = role;
+    await auth.setCustomUserClaims(uid, claims);
+  }
+
+  return { role, claimsUpdated: claims.staffRole === role };
 }
 
 function isStaffAuth(auth) {
@@ -192,6 +227,7 @@ async function createModerationNotification(db, params) {
     body: params.body,
     read: false,
     listingId: params.listingId || "",
+    listingTarget: params.listingTarget || "view",
     threadId: "",
     createdAt: FieldValue.serverTimestamp(),
   });
@@ -221,14 +257,17 @@ async function countReportStats(db) {
 async function adminGetDashboardStatsHandler(request) {
   requireStaff(request);
   const db = getFirestore();
-  const [{ openReports, needsTreatmentReports }, activeListings] = await Promise.all([
+  const { countOpenInquiries } = require("./supportInquiries");
+  const [{ openReports, needsTreatmentReports }, activeListings, openInquiries] = await Promise.all([
     countReportStats(db),
     countActiveListings(db),
+    countOpenInquiries(db),
   ]);
   return {
     openReports,
     needsTreatmentReports,
     activeListings,
+    openInquiries,
   };
 }
 
@@ -331,14 +370,18 @@ async function adminModerateListingFromReportHandler(request) {
       });
     }
   } else {
+    const publishRemainingMs = computePublishRemainingMs(listing);
     await listingRef.set(
       {
         status: "draft",
+        publishRemainingMs,
         moderatedAt: now,
         moderatedBy: staffUid,
         moderationAction: "returned_to_draft",
         moderationDraftNote: draftNote.slice(0, ADMIN_MODERATION_DRAFT_NOTE_MAX),
+        moderationResubmittedAt: FieldValue.delete(),
         updatedAt: now,
+        expiryReminderSent: false,
       },
       { merge: true },
     );
@@ -346,8 +389,11 @@ async function adminModerateListingFromReportHandler(request) {
       await createModerationNotification(db, {
         userId: publisherId,
         listingId,
+        listingTarget: "publish",
         title: "נדרש עדכון למודעה",
-        body: draftNote.slice(0, ADMIN_MODERATION_DRAFT_NOTE_MAX),
+        body: buildModerationUpdateNotificationBody(
+          draftNote.slice(0, ADMIN_MODERATION_DRAFT_NOTE_MAX),
+        ),
       });
     }
   }

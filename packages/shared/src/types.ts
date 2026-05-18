@@ -1,6 +1,13 @@
 import type { LocationKind } from "./location";
 
-export type ListingStatus = "draft" | "active" | "frozen" | "expired" | "rented" | "removed";
+export type ListingStatus =
+  | "draft"
+  | "pending_review"
+  | "active"
+  | "frozen"
+  | "expired"
+  | "rented"
+  | "removed";
 
 export type PropertyFeature =
   | "parking"
@@ -99,6 +106,10 @@ export interface RentalListing {
   expiresAt: string;
   /** הערת צוות כשהמודעה הוחזרה לטיוטה מדיווח */
   moderationDraftNote?: string;
+  /** returned_to_draft — נדרשת שליחה מחדש לבדיקת צוות */
+  moderationAction?: string;
+  /** מילישניות שנותרו מ־30 יום הפרסום (מושהה בטיוטה/בדיקה) */
+  publishRemainingMs?: number;
   publisher: ListingPublisher;
 }
 

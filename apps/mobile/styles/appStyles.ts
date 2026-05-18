@@ -759,13 +759,35 @@ export const appStyles = StyleSheet.create({
     color: '#fff',
     fontWeight: '900',
   },
-  chatThreadRow: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+  chatThreadRowShell: {
+    flexDirection: 'row-reverse',
+    alignItems: 'stretch',
     borderBottomWidth: 1,
     borderBottomColor: '#e4e5e7',
     backgroundColor: '#ffffff',
+  },
+  chatThreadRowShellUnread: {
+    backgroundColor: 'rgba(8, 184, 200, 0.07)',
+  },
+  chatThreadRow: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     gap: 6,
+  },
+  chatThreadTitleRow: {
+    flex: 1,
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 8,
+    minWidth: 0,
+  },
+  chatThreadUnreadDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 999,
+    backgroundColor: '#08b8c8',
+    flexShrink: 0,
   },
   chatThreadRowTop: {
     flexDirection: 'row-reverse',

@@ -8,7 +8,14 @@ import {
   Text,
   View,
 } from "react-native";
-import { formatChatMessageTime, type LobbyInAppNotification } from "@lobby/shared";
+import {
+  buildSupportChatRouteId,
+  formatChatMessageTime,
+  formatNotificationBodyForDisplay,
+  isMessagingNotificationKind,
+  resolveLobbyNotificationNavigation,
+  type LobbyInAppNotification,
+} from "@lobby/shared";
 import { getFirestoreDb } from "./lib/firebase/client";
 import { isFirebaseConfigured } from "./lib/firebase/isConfigured";
 import {
@@ -22,16 +29,23 @@ export function NotificationsScreen({
   onClose,
   onOpenThread,
   onOpenListing,
+  onEditListing,
   onOpenAccount,
+  onOpenContact,
+  onOpenSupport,
 }: {
   onClose: () => void;
   onOpenThread: (threadId: string) => void;
   onOpenListing: (listingId: string) => void;
+  onEditListing: (listingId: string) => void;
   onOpenAccount: () => void;
+  onOpenContact?: () => void;
+  onOpenSupport?: (inquiryId: string) => void;
 }) {
   const { user, loading, openAuthModal } = useLobbyAuth();
   const [items, setItems] = useState<LobbyInAppNotification[]>([]);
   const [listLoading, setListLoading] = useState(false);
+  const [markingAll, setMarkingAll] = useState(false);
 
   useEffect(() => {
     if (!user || !isFirebaseConfigured()) {
@@ -51,7 +65,11 @@ export function NotificationsScreen({
     return () => unsub();
   }, [user]);
 
-  const unreadIds = useMemo(() => items.filter((n) => !n.read).map((n) => n.id), [items]);
+  const visibleItems = useMemo(
+    () => items.filter((n) => !isMessagingNotificationKind(n.kind)),
+    [items],
+  );
+  const unreadIds = useMemo(() => visibleItems.filter((n) => !n.read).map((n) => n.id), [visibleItems]);
   const unreadCount = unreadIds.length;
 
   const handleOpen = useCallback(
@@ -59,19 +77,33 @@ export function NotificationsScreen({
       if (!item.read) {
         void markNotificationRead(item.id);
       }
-      if (item.kind === "chat_message" && item.threadId) {
-        onOpenThread(item.threadId);
+      const nav = resolveLobbyNotificationNavigation(item);
+      if (!nav) {
         return;
       }
-      if (item.kind === "listing_expired" || item.kind === "listing_expiring") {
+      if (nav.type === "chat") {
+        onOpenThread(nav.threadId);
+        return;
+      }
+      if (nav.type === "account") {
         onOpenAccount();
         return;
       }
-      if (item.listingId) {
-        onOpenListing(item.listingId);
+      if (nav.type === "publish") {
+        onEditListing(nav.listingId);
+        return;
       }
+      if (nav.type === "support") {
+        onOpenThread(buildSupportChatRouteId(nav.inquiryId));
+        return;
+      }
+      if (nav.type === "contact") {
+        onOpenContact?.();
+        return;
+      }
+      onOpenListing(nav.listingId);
     },
-    [onOpenAccount, onOpenListing, onOpenThread],
+    [onOpenAccount, onOpenContact, onOpenSupport, onOpenListing, onEditListing, onOpenThread],
   );
 
   if (!isFirebaseConfigured()) {
@@ -119,17 +151,27 @@ export function NotificationsScreen({
         </Pressable>
         <Text style={styles.topTitle}>התראות</Text>
         {unreadCount > 0 ? (
-          <Pressable onPress={() => void markAllNotificationsRead(unreadIds)} accessibilityRole="button">
-            <Text style={styles.topMarkAll}>סימון הכל</Text>
+          <Pressable
+            onPress={() => {
+              if (markingAll) {
+                return;
+              }
+              setMarkingAll(true);
+              void markAllNotificationsRead(unreadIds).finally(() => setMarkingAll(false));
+            }}
+            accessibilityRole="button"
+            disabled={markingAll}
+          >
+            <Text style={styles.topMarkAll}>{markingAll ? "מסמן…" : "סמן הכל כנקרא"}</Text>
           </Pressable>
         ) : (
           <View style={styles.topSpacer} />
         )}
       </View>
       <ScrollView contentContainerStyle={styles.scroll} bounces={false} showsVerticalScrollIndicator={false}>
-        {listLoading && items.length === 0 ? <Text style={styles.muted}>טוען…</Text> : null}
-        {!listLoading && items.length === 0 ? <Text style={styles.muted}>אין עדכונים.</Text> : null}
-        {items.map((item) => {
+        {listLoading && visibleItems.length === 0 ? <Text style={styles.muted}>טוען…</Text> : null}
+        {!listLoading && visibleItems.length === 0 ? <Text style={styles.muted}>אין עדכונים.</Text> : null}
+        {visibleItems.map((item) => {
           const timeLabel = item.createdAtMs > 0 ? formatChatMessageTime(item.createdAtMs) : "";
           return (
             <Pressable
@@ -138,7 +180,7 @@ export function NotificationsScreen({
               onPress={() => handleOpen(item)}
             >
               <Text style={styles.rowTitle}>{item.title}</Text>
-              <Text style={styles.rowBody}>{item.body}</Text>
+              <Text style={styles.rowBody}>{formatNotificationBodyForDisplay(item)}</Text>
               {timeLabel ? <Text style={styles.rowTime}>{timeLabel}</Text> : null}
             </Pressable>
           );
@@ -182,6 +224,13 @@ const styles = StyleSheet.create({
   },
   rowUnread: { borderColor: "rgba(8,184,200,0.28)", backgroundColor: "rgba(232,251,253,0.45)" },
   rowTitle: { textAlign: "right", fontSize: 15, fontWeight: "800", color: "#101820" },
-  rowBody: { marginTop: 6, textAlign: "right", fontSize: 14, fontWeight: "600", color: "#687076" },
+  rowBody: {
+    marginTop: 6,
+    textAlign: "right",
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#687076",
+    lineHeight: 20,
+  },
   rowTime: { marginTop: 8, textAlign: "right", fontSize: 12, fontWeight: "700", color: "#8b949b" },
 });

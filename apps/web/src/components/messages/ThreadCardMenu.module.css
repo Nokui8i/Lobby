@@ -1,0 +1,68 @@
+.root {
+  position: relative;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: -4px 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #5c6670;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.trigger:hover,
+.trigger[aria-expanded="true"] {
+  background: rgba(16, 24, 32, 0.06);
+  color: #101820;
+}
+
+.dots {
+  display: block;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  transform: translateY(-1px);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  min-width: 168px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(16, 24, 32, 0.1);
+  box-shadow: 0 8px 24px rgba(16, 24, 32, 0.12);
+}
+
+.menuItemDanger {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #c62828;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: right;
+  cursor: pointer;
+}
+
+.menuItemDanger:hover {
+  background: rgba(198, 40, 40, 0.08);
+}

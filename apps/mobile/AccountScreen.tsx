@@ -16,6 +16,8 @@ import {
   LISTING_OWNER_ACTION_CONFIRM_HE,
   LISTING_OWNER_ACTION_LABEL_HE,
   LISTING_STATUS_LABEL_HE,
+  listingPublishCountdownIsUrgent,
+  listingPublishCountdownLabel,
   listingOwnerActionIsDestructive,
   listingOwnerActionsForStatus,
   type ListingOwnerActionId,
@@ -37,7 +39,11 @@ type AccountTab = "active" | "draft" | "offFeed";
 
 function listingMatchesTab(listing: RentalListing, tab: AccountTab): boolean {
   if (tab === "active") {
-    return listing.status === "active" || listing.status === "frozen";
+    return (
+      listing.status === "active" ||
+      listing.status === "frozen" ||
+      listing.status === "pending_review"
+    );
   }
   if (tab === "draft") {
     return listing.status === "draft";
@@ -332,7 +338,10 @@ export function AccountScreen({
         {listError ? <Text style={styles.rowMuted}>לא ניתן לטעון כרגע.</Text> : null}
         {!listLoading && !listError && filtered.length === 0 ? <Text style={styles.rowMuted}>אין פריטים.</Text> : null}
 
-        {filtered.map((listing) => (
+        {filtered.map((listing) => {
+          const publishCountdown = listingPublishCountdownLabel(listing);
+          const publishCountdownUrgent = listingPublishCountdownIsUrgent(listing);
+          return (
           <View key={listing.id} style={styles.card}>
             <Pressable
               style={styles.cardMain}
@@ -349,6 +358,17 @@ export function AccountScreen({
                   ₪{listing.priceIls.toLocaleString("he-IL")} · {formatListingLocationLine(listing)}
                 </Text>
                 <Text style={statusPillStyle(listing.status)}>{LISTING_STATUS_LABEL_HE[listing.status]}</Text>
+                {publishCountdown ? (
+                  <Text
+                    style={[
+                      styles.countdown,
+                      publishCountdownUrgent ? styles.countdownUrgent : null,
+                    ]}
+                    numberOfLines={2}
+                  >
+                    {publishCountdown}
+                  </Text>
+                ) : null}
               </View>
             </Pressable>
             <Pressable
@@ -361,7 +381,8 @@ export function AccountScreen({
               <Text style={styles.menuDots}>⋮</Text>
             </Pressable>
           </View>
-        ))}
+          );
+        })}
 
         <View style={styles.moreDivider} />
         <Pressable style={styles.moreRow} onPress={onOpenNotifications} accessibilityRole="button">
@@ -746,6 +767,17 @@ const styles = StyleSheet.create({
   pillOff: {
     backgroundColor: "rgba(107,114,128,0.12)",
     color: "#374151",
+  },
+  countdown: {
+    marginTop: 6,
+    textAlign: "right",
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#0d5c66",
+    lineHeight: 18,
+  },
+  countdownUrgent: {
+    color: "#c1121f",
   },
   moreDivider: {
     height: 1,

@@ -1,7 +1,15 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { CHAT_MESSAGE_MAX_LENGTH, formatChatMessageTime } from '@lobby/shared';
+import {
+  CHAT_MESSAGE_MAX_LENGTH,
+  createOptimisticMessageId,
+  formatChatMessageTime,
+  formatLobbySendError,
+  isComposerSendKey,
+  logLobbyError,
+  parseSupportChatRouteId,
+} from '@lobby/shared';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Keyboard,
@@ -26,9 +34,31 @@ import {
 import { getFirestoreDb, ensureFirestoreAuthReady } from '../lib/firebase/client';
 import { isFirebaseConfigured } from '../lib/firebase/isConfigured';
 import { useLobbyAuth } from '../lib/LobbyAuthContext';
+import { mergeServerMessagesWithPending, pruneAcknowledgedPending } from '../lib/mergePendingMessages';
 import { appStyles } from '../styles/appStyles';
+import { SupportThreadView } from './SupportScreens';
 
 export function ChatThreadView({
+  threadId,
+  onBackToList,
+  onClose,
+}: {
+  threadId: string;
+  onBackToList: () => void;
+  onClose: () => void;
+}) {
+  const supportInquiryId = parseSupportChatRouteId(threadId);
+  if (supportInquiryId) {
+    return (
+      <SupportThreadView inquiryId={supportInquiryId} onBack={onBackToList} onClose={onClose} />
+    );
+  }
+  return (
+    <ListingChatThreadView threadId={threadId} onBackToList={onBackToList} onClose={onClose} />
+  );
+}
+
+function ListingChatThreadView({
   threadId,
   onBackToList,
   onClose,
@@ -40,6 +70,7 @@ export function ChatThreadView({
   const { user, loading, openAuthModal } = useLobbyAuth();
   const [thread, setThread] = useState<ChatThreadSummary | null | undefined>(undefined);
   const [messages, setMessages] = useState<ChatMessageRow[]>([]);
+  const [pendingMessages, setPendingMessages] = useState<ChatMessageRow[]>([]);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -75,17 +106,20 @@ export function ChatThreadView({
     if (!user) {
       setThread(null);
       setMessages([]);
+      setPendingMessages([]);
       return;
     }
 
     if (!isFirebaseConfigured()) {
       setThread(null);
       setMessages([]);
+      setPendingMessages([]);
       return;
     }
 
     setThread(undefined);
     setMessages([]);
+    setPendingMessages([]);
     nearBottomRef.current = true;
 
     let unsubscribe: (() => void) | undefined;
@@ -118,6 +152,7 @@ export function ChatThreadView({
 
       unsubscribe = subscribeChatMessages(getFirestoreDb(), threadId, (rows) => {
         setMessages(rows);
+        setPendingMessages((pending) => pruneAcknowledgedPending(pending, rows));
       });
     })();
 
@@ -127,8 +162,13 @@ export function ChatThreadView({
     };
   }, [threadId, user]);
 
+  const displayMessages = useMemo(
+    () => mergeServerMessagesWithPending(messages, pendingMessages),
+    [messages, pendingMessages],
+  );
+
   useEffect(() => {
-    const last = messages[messages.length - 1];
+    const last = displayMessages[displayMessages.length - 1];
     if (!last) {
       return;
     }
@@ -136,7 +176,7 @@ export function ChatThreadView({
     if (nearBottomRef.current || last.senderId === user?.uid) {
       scrollRef.current?.scrollToEnd({ animated: true });
     }
-  }, [messages, user?.uid]);
+  }, [displayMessages, user?.uid]);
 
   useEffect(() => {
     if (keyboardPad <= 0) {
@@ -157,7 +197,7 @@ export function ChatThreadView({
   }
 
   async function handleSend() {
-    if (!user || !thread) {
+    if (!user || !thread || sending) {
       return;
     }
 
@@ -167,14 +207,34 @@ export function ChatThreadView({
       return;
     }
 
-    setSending(true);
+    const otherId = thread.participantIds.find((id) => id !== user.uid);
+    if (!otherId) {
+      return;
+    }
+
+    const optimisticId = createOptimisticMessageId();
+    const optimistic: ChatMessageRow = {
+      id: optimisticId,
+      senderId: user.uid,
+      text,
+      createdAt: Date.now(),
+    };
+
+    setDraft('');
+    setPendingMessages((prev) => [...prev, optimistic]);
     setSendError(null);
+    setSending(true);
 
     try {
-      await sendChatMessage(getFirestoreDb(), threadId, user.uid, text);
-      setDraft('');
-    } catch {
-      setSendError('לא ניתן לשלוח. נסו שוב.');
+      await ensureFirestoreAuthReady(user);
+      await sendChatMessage(getFirestoreDb(), threadId, user.uid, text, {
+        otherParticipantId: otherId,
+      });
+    } catch (err) {
+      logLobbyError('chat send', err);
+      setPendingMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      setDraft(text);
+      setSendError(formatLobbySendError(err, 'לא ניתן לשלוח. נסו שוב.'));
     } finally {
       setSending(false);
     }
@@ -196,7 +256,7 @@ export function ChatThreadView({
           onScroll={handleMessagesScroll}
           scrollEventThrottle={16}
         >
-          {messages.map((message) => {
+          {displayMessages.map((message) => {
             const mine = message.senderId === user.uid;
             const timeLabel = formatChatMessageTime(message.createdAt);
             return (
@@ -236,6 +296,13 @@ export function ChatThreadView({
               multiline
               textAlign="right"
               blurOnSubmit={false}
+              onKeyPress={(event) => {
+                const native = event.nativeEvent;
+                if (isComposerSendKey(native.key, Boolean(native.shiftKey))) {
+                  event.preventDefault();
+                  void handleSend();
+                }
+              }}
             />
             <Pressable
               accessibilityRole="button"
@@ -270,9 +337,7 @@ export function ChatThreadView({
           <View style={appStyles.logoRow}>
             <Text style={appStyles.chatScreenTitle}>צ׳אט</Text>
           </View>
-          <Pressable style={appStyles.headerPublishAction} accessibilityRole="button" onPress={onClose}>
-            <Text style={appStyles.chatHeaderActionText}>סגירה</Text>
-          </Pressable>
+          <View style={appStyles.headerPublishAction} />
         </View>
 
         {loading ? (
@@ -293,6 +358,7 @@ export function ChatThreadView({
         ) : (
           threadKeyboardBody
         )}
+
       </View>
     </SafeAreaView>
   );

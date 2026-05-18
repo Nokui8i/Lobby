@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CHAT_MESSAGE_MAX_LENGTH, formatChatMessageTime } from "@lobby/shared";
+import {
+  CHAT_MESSAGE_MAX_LENGTH,
+  createOptimisticMessageId,
+  formatChatMessageTime,
+  formatLobbySendError,
+  isComposerSendKey,
+  logLobbyError,
+} from "@lobby/shared";
 import { useLobbyAuth } from "@/contexts/LobbyAuthContext";
 import {
   getChatThreadIfParticipant,
@@ -14,6 +21,7 @@ import {
 } from "@/lib/firebase/chat";
 import { getFirestoreDb, ensureFirestoreAuthReady } from "@/lib/firebase/client";
 import { isFirebaseConfigured } from "@/lib/firebase/isConfigured";
+import { mergeServerMessagesWithPending, pruneAcknowledgedPending } from "@/lib/mergePendingMessages";
 import styles from "./chat.module.css";
 
 interface ChatThreadClientProps {
@@ -24,6 +32,7 @@ export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
   const { user, loading, openAuthModal } = useLobbyAuth();
   const [thread, setThread] = useState<ChatThreadSummary | null | undefined>(undefined);
   const [messages, setMessages] = useState<ChatMessageRow[]>([]);
+  const [pendingMessages, setPendingMessages] = useState<ChatMessageRow[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -38,7 +47,8 @@ export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
     }
 
     setThread(undefined);
-    setMessages([]);
+      setMessages([]);
+      setPendingMessages([]);
 
     let unsubscribeMessages: (() => void) | undefined;
     let cancelled = false;
@@ -70,6 +80,7 @@ export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
 
       unsubscribeMessages = subscribeChatMessages(getFirestoreDb(), threadId, (rows) => {
         setMessages(rows);
+        setPendingMessages((pending) => pruneAcknowledgedPending(pending, rows));
       });
     })();
 
@@ -79,31 +90,28 @@ export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
     };
   }, [threadId, user]);
 
+  const displayMessages = useMemo(
+    () => mergeServerMessagesWithPending(messages, pendingMessages),
+    [messages, pendingMessages],
+  );
+
   useEffect(() => {
     const el = messagesScrollRef.current;
-    if (!el || messages.length === 0) {
+    if (!el || displayMessages.length === 0) {
       return;
     }
 
-    const last = messages[messages.length - 1];
+    const last = displayMessages[displayMessages.length - 1];
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     const nearBottom = distanceFromBottom < 160;
 
     if (nearBottom || last?.senderId === user?.uid) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, user?.uid]);
-
-  const otherParticipantId = useMemo(() => {
-    if (!user || !thread) {
-      return null;
-    }
-
-    return thread.participantIds.find((id) => id !== user.uid) ?? null;
-  }, [thread, user]);
+  }, [displayMessages, user?.uid]);
 
   async function handleSend() {
-    if (!user || !thread) {
+    if (!user || !thread || sending) {
       return;
     }
 
@@ -113,14 +121,34 @@ export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
       return;
     }
 
-    setSending(true);
+    const otherId = thread.participantIds.find((id) => id !== user.uid);
+    if (!otherId) {
+      return;
+    }
+
+    const optimisticId = createOptimisticMessageId();
+    const optimistic: ChatMessageRow = {
+      id: optimisticId,
+      senderId: user.uid,
+      text,
+      createdAt: Date.now(),
+    };
+
+    setDraft("");
+    setPendingMessages((prev) => [...prev, optimistic]);
     setSendError(null);
+    setSending(true);
 
     try {
-      await sendChatMessage(getFirestoreDb(), threadId, user.uid, text);
-      setDraft("");
-    } catch {
-      setSendError("לא ניתן לשלוח כרגע. בדקו חיבור ונסו שוב.");
+      await ensureFirestoreAuthReady(user);
+      await sendChatMessage(getFirestoreDb(), threadId, user.uid, text, {
+        otherParticipantId: otherId,
+      });
+    } catch (err) {
+      logLobbyError("chat send", err);
+      setPendingMessages((prev) => prev.filter((m) => m.id !== optimisticId));
+      setDraft(text);
+      setSendError(formatLobbySendError(err, "לא ניתן לשלוח כרגע. בדקו חיבור ונסו שוב."));
     } finally {
       setSending(false);
     }
@@ -190,19 +218,11 @@ export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
         <h1>צ׳אט</h1>
       </div>
 
-      <p className={styles.threadMeta}>
-        {thread.listingTitle}
-        {otherParticipantId ? (
-          <>
-            <br />
-            <span className={styles.muted}>צד שני · {otherParticipantId.slice(0, 8)}…</span>
-          </>
-        ) : null}
-      </p>
+      <p className={styles.threadMeta}>{thread.listingTitle}</p>
 
       <div ref={messagesScrollRef} className={styles.messagesScroll}>
         <div className={styles.messagesInner}>
-          {messages.map((message) => {
+          {displayMessages.map((message) => {
             const mine = message.senderId === user.uid;
             const timeLabel = formatChatMessageTime(message.createdAt);
             return (
@@ -233,6 +253,15 @@ export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
             maxLength={CHAT_MESSAGE_MAX_LENGTH}
             placeholder="כתבו הודעה…"
             onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.nativeEvent.isComposing) {
+                return;
+              }
+              if (isComposerSendKey(event.key, event.shiftKey)) {
+                event.preventDefault();
+                void handleSend();
+              }
+            }}
             rows={2}
             dir="rtl"
           />

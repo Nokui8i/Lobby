@@ -38,6 +38,7 @@ export type AdminDashboardStats = {
   openReports: number;
   needsTreatmentReports: number;
   activeListings: number;
+  openInquiries: number;
 };
 
 export function normalizeListingReportStatus(raw: unknown): ListingReportStatus {

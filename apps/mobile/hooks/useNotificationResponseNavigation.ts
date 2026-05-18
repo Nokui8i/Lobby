@@ -2,7 +2,7 @@ import * as Notifications from "expo-notifications";
 import { useEffect } from "react";
 
 export function useNotificationResponseNavigation(
-  onOpen: (data: { threadId?: string; listingId?: string }) => void,
+  onOpen: (data: { threadId?: string; inquiryId?: string; listingId?: string }) => void,
 ) {
   useEffect(() => {
     const navigate = (raw: Record<string, unknown> | undefined) => {
@@ -10,7 +10,15 @@ export function useNotificationResponseNavigation(
         return;
       }
       const threadId = typeof raw.threadId === "string" ? raw.threadId : undefined;
+      const inquiryId =
+        (typeof raw.supportInquiryId === "string" && raw.supportInquiryId) ||
+        (typeof raw.inquiryId === "string" && raw.inquiryId) ||
+        undefined;
       const listingId = typeof raw.listingId === "string" ? raw.listingId : undefined;
+      if (inquiryId) {
+        onOpen({ inquiryId });
+        return;
+      }
       if (threadId || listingId) {
         onOpen({ threadId, listingId });
       }

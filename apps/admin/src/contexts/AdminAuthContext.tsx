@@ -83,6 +83,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
             setUser(null);
             setStaffRole(null);
           } else {
+            await nextUser.getIdToken(true);
             setUser(nextUser);
             setStaffRole(role);
             setLastActivity(Date.now());

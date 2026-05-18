@@ -22,6 +22,7 @@ import styles from "../page.module.css";
 
 const INITIAL_VISIBLE_LISTINGS = 6;
 const LISTINGS_LOAD_STEP = 6;
+const FEED_FETCH_LIMIT = 48;
 
 type FeedListing = RentalListing & {
   feedKey: string;
@@ -44,9 +45,14 @@ export function ListingsFeed() {
   const [feedError, setFeedError] = useState(false);
   const [visibleListingCount, setVisibleListingCount] = useState(INITIAL_VISIBLE_LISTINGS);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const feedListingsRef = useRef<FeedListing[]>([]);
+  feedListingsRef.current = feedListings;
 
   const loadListings = useCallback(async () => {
-    setFeedLoading(true);
+    const isBackgroundRefresh = feedListingsRef.current.length > 0;
+    if (!isBackgroundRefresh) {
+      setFeedLoading(true);
+    }
     setFeedError(false);
 
     if (!isFirebaseConfigured()) {
@@ -58,7 +64,7 @@ export function ListingsFeed() {
 
     try {
       const remote = await fetchActiveListingsFromFirestore({
-        maxListings: 96,
+        maxListings: FEED_FETCH_LIMIT,
         feedFilters: appliedFilters,
         feedSort: appliedSort,
       });
@@ -75,16 +81,6 @@ export function ListingsFeed() {
 
   useEffect(() => {
     void loadListings();
-  }, [loadListings]);
-
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === "visible") {
-        void loadListings();
-      }
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [loadListings]);
 
   useEffect(() => {
@@ -165,7 +161,14 @@ export function ListingsFeed() {
             className={styles.card}
           >
             <div className={styles.cardImage}>
-              <Image src={listing.imageUrl} alt={listing.title} width={560} height={360} />
+              <Image
+                src={listing.imageUrl}
+                alt={listing.title}
+                width={560}
+                height={360}
+                sizes="(max-width: 820px) 100vw, 33vw"
+                loading="lazy"
+              />
               <SaveListingButton
                 listingId={listing.listingId}
                 listingTitle={listing.title}

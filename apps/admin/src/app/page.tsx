@@ -70,6 +70,18 @@ export default function AdminDashboardPage() {
         },
       ],
     },
+    {
+      key: "inquiries",
+      title: "פניות",
+      href: "/inquiries",
+      enabled: staffCanAccessNav(staffRole, "inquiries"),
+      lines: [
+        {
+          label: "פתוחות לטיפול",
+          value: loading ? "…" : error ? "—" : (stats?.openInquiries ?? 0),
+        },
+      ],
+    },
   ];
 
   return (

@@ -19,6 +19,7 @@ describe("staffRoles", () => {
   it("gates nav by minimum role", () => {
     expect(staffCanAccessNav("moderator", "reports")).toBe(true);
     expect(staffCanAccessNav("moderator", "users")).toBe(true);
+    expect(staffCanAccessNav("moderator", "inquiries")).toBe(true);
     expect(staffCanAccessNav("moderator", "staff")).toBe(false);
     expect(staffCanAccessNav("owner", "site")).toBe(true);
     expect(staffRoleMeetsMinimum("admin", "moderator")).toBe(true);

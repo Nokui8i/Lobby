@@ -10,6 +10,73 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == userId;
     }
 
+    function staffRoleOnUserProfile() {
+      let userRef = /databases/$(database)/documents/users/$(request.auth.uid);
+      return exists(userRef)
+        && get(userRef).data.staffRole is string
+        && get(userRef).data.staffRole in ['moderator', 'admin', 'owner'];
+    }
+
+    function isStaff() {
+      return signedIn() && (
+        request.auth.token.staffRole == 'moderator'
+        || request.auth.token.staffRole == 'admin'
+        || request.auth.token.staffRole == 'owner'
+        || staffRoleOnUserProfile()
+      );
+    }
+
+    function canReadSupportInquiry(inquiryId) {
+      let doc = get(/databases/$(database)/documents/supportInquiries/$(inquiryId));
+      return signedIn() && (doc.data.userId == request.auth.uid || isStaff());
+    }
+
+    function supportInquiryDoc(inquiryId) {
+      return get(/databases/$(database)/documents/supportInquiries/$(inquiryId));
+    }
+
+    /** תואם ל־normalizeSupportInquiryStatus בלקוח: רק closed/resolved סגורים */
+    function supportInquiryStatusClosed(status) {
+      return status == "closed" || status == "resolved";
+    }
+
+    function supportInquiryStatusOpen(status) {
+      return !supportInquiryStatusClosed(status);
+    }
+
+    function userNotBanned() {
+      let userRef = /databases/$(database)/documents/users/$(request.auth.uid);
+      return !exists(userRef)
+        || !("bannedAt" in get(userRef).data)
+        || get(userRef).data.bannedAt == null;
+    }
+
+    function supportInquiryMessageCreateAllowed(inquiryId) {
+      let inq = supportInquiryDoc(inquiryId);
+      return signedIn()
+        && userNotBanned()
+        && supportInquiryStatusOpen(inq.data.status)
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 2000
+        && (
+          (inq.data.userId == request.auth.uid && request.resource.data.senderRole == "user")
+          || (isStaff() && request.resource.data.senderRole == "staff")
+        );
+    }
+
+    function supportInquirySendPatchAllowed(inquiryId) {
+      let inq = supportInquiryDoc(inquiryId);
+      return signedIn()
+        && userNotBanned()
+        && supportInquiryStatusOpen(resource.data.status)
+        && supportInquiryStatusOpen(inq.data.status)
+        && (inq.data.userId == request.auth.uid || isStaff())
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.status == resource.data.status;
+    }
+
     match /users/{userId} {
       allow read, update, delete: if ownsUserDoc(userId);
       allow create: if ownsUserDoc(userId);
@@ -83,6 +150,23 @@ service cloud.firestore {
           && request.resource.data.text.size() <= 2000;
         allow update, delete: if false;
       }
+    }
+
+    match /supportInquiries/{inquiryId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isStaff());
+      allow create: if false;
+      allow update: if supportInquirySendPatchAllowed(inquiryId);
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if canReadSupportInquiry(inquiryId);
+        allow create: if supportInquiryMessageCreateAllowed(inquiryId);
+        allow update, delete: if false;
+      }
+    }
+
+    match /counters/{counterId} {
+      allow read, write: if false;
     }
 
     match /payments/{paymentId} {

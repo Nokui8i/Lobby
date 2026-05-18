@@ -17,11 +17,11 @@ import {
 import {
   CHAT_MESSAGE_MAX_LENGTH,
   CHAT_THREADS_COLLECTION,
-  USERS_COLLECTION,
   buildChatThreadId,
+  compareByUnreadThenUpdatedMs,
   firestoreTimestampToMillis,
+  isChatThreadHiddenForUser,
 } from "@lobby/shared";
-import { createChatMessageNotification } from "./notifications";
 
 const LAST_MESSAGE_PREVIEW_MAX = 140;
 
@@ -66,6 +66,10 @@ function mapThreadDoc(docSnap: DocumentSnapshot, viewerUid: string): ChatThreadS
   const participantIds = data.participantIds;
 
   if (!Array.isArray(participantIds) || !participantIds.every((p) => typeof p === "string")) {
+    return null;
+  }
+
+  if (isChatThreadHiddenForUser(data.deletedByUids, viewerUid)) {
     return null;
   }
 
@@ -128,7 +132,13 @@ export async function createOrGetChatThread(
   return threadId;
 }
 
-export async function sendChatMessage(db: Firestore, threadId: string, senderId: string, text: string) {
+export async function sendChatMessage(
+  db: Firestore,
+  threadId: string,
+  senderId: string,
+  text: string,
+  options?: { otherParticipantId?: string },
+) {
   const trimmed = text.trim();
 
   if (!trimmed || trimmed.length > CHAT_MESSAGE_MAX_LENGTH) {
@@ -136,22 +146,26 @@ export async function sendChatMessage(db: Firestore, threadId: string, senderId:
   }
 
   const threadRef = doc(db, CHAT_THREADS_COLLECTION, threadId);
-  const threadSnap = await getDoc(threadRef);
+  let otherId = options?.otherParticipantId;
 
-  if (!threadSnap.exists()) {
-    throw new Error("THREAD_NOT_FOUND");
-  }
+  if (!otherId) {
+    const threadSnap = await getDoc(threadRef);
 
-  const threadData = threadSnap.data();
-  const participantIds = threadData.participantIds;
+    if (!threadSnap.exists()) {
+      throw new Error("THREAD_NOT_FOUND");
+    }
 
-  if (!Array.isArray(participantIds) || !participantIds.includes(senderId)) {
-    throw new Error("NOT_PARTICIPANT");
-  }
+    const threadData = threadSnap.data();
+    const participantIds = threadData.participantIds;
 
-  const otherId = participantIds.find((id: string) => id !== senderId);
-  if (!otherId || typeof otherId !== "string") {
-    throw new Error("NO_PEER");
+    if (!Array.isArray(participantIds) || !participantIds.includes(senderId)) {
+      throw new Error("NOT_PARTICIPANT");
+    }
+
+    otherId = participantIds.find((id: string) => id !== senderId);
+    if (!otherId || typeof otherId !== "string") {
+      throw new Error("NO_PEER");
+    }
   }
 
   const preview = trimmed.slice(0, LAST_MESSAGE_PREVIEW_MAX);
@@ -171,38 +185,22 @@ export async function sendChatMessage(db: Firestore, threadId: string, senderId:
     lastMessageSenderId: senderId,
     lastMessageAt: serverTimestamp(),
     [`unread.${otherId}`]: increment(1),
+    deletedByUids: [],
   };
 
   batch.update(threadRef, threadUpdate);
   await batch.commit();
+}
 
-  const listingId = typeof threadData.listingId === "string" ? threadData.listingId : "";
-  const listingTitle = typeof threadData.listingTitle === "string" ? threadData.listingTitle : "מודעה";
-
-  let senderDisplayName = "משתמש";
-  try {
-    const senderSnap = await getDoc(doc(db, USERS_COLLECTION, senderId));
-    const name = senderSnap.data()?.displayName;
-    if (typeof name === "string" && name.trim()) {
-      senderDisplayName = name.trim();
-    }
-  } catch {
-    /* ignore */
-  }
-
-  try {
-    await createChatMessageNotification(db, {
-      recipientUserId: otherId,
-      senderUserId: senderId,
-      senderDisplayName,
-      threadId,
-      listingId,
-      listingTitle,
-      messagePreview: preview,
-    });
-  } catch {
-    /* in-app feed is best-effort */
-  }
+function sortChatThreadsForViewer(rows: ChatThreadSummary[]): ChatThreadSummary[] {
+  return [...rows].sort((a, b) =>
+    compareByUnreadThenUpdatedMs(
+      a.unreadForViewer ?? 0,
+      b.unreadForViewer ?? 0,
+      firestoreTimestampToMillis(a.updatedAt),
+      firestoreTimestampToMillis(b.updatedAt),
+    ),
+  );
 }
 
 /** מאפס את מונה ה־unread למשתמש בשרשור (כשנכנסים לשיחה). */
@@ -243,9 +241,7 @@ export async function fetchChatThreadsForUser(db: Firestore, viewerUid: string):
     }
   }
 
-  rows.sort((a, b) => firestoreTimestampToMillis(b.updatedAt) - firestoreTimestampToMillis(a.updatedAt));
-
-  return rows;
+  return sortChatThreadsForViewer(rows);
 }
 
 /** מנוי חי לרשימת שיחות — מסונכן בין אתר למובייל (אותו query). */
@@ -270,8 +266,7 @@ export function subscribeChatThreadsForUser(
           rows.push(mapped);
         }
       }
-      rows.sort((a, b) => firestoreTimestampToMillis(b.updatedAt) - firestoreTimestampToMillis(a.updatedAt));
-      onThreads(rows);
+      onThreads(sortChatThreadsForViewer(rows));
     },
     (error) => {
       onError?.(error);

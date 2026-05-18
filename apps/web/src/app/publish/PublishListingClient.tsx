@@ -25,6 +25,7 @@ import { useLobbyAuth } from "@/contexts/LobbyAuthContext";
 import { ensureFirestoreAuthReady } from "@/lib/firebase/client";
 import { isFirebaseConfigured } from "@/lib/firebase/isConfigured";
 import { fetchListingByIdFromFirestore } from "@/lib/firebase/listingQueries";
+import { submitListingForReview } from "@/lib/firebase/listingModeration";
 import {
   listingPublishStatusForNewSave,
   newListingDocumentId,
@@ -175,6 +176,8 @@ export function PublishListingClient() {
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [sentForModerationReview, setSentForModerationReview] = useState(false);
+  const [requiresModerationResubmit, setRequiresModerationResubmit] = useState(false);
 
   const toggleFeature = useCallback((key: PropertyFeature) => {
     setFeatures((prev) => (prev.includes(key) ? prev.filter((f) => f !== key) : [...prev, key]));
@@ -234,6 +237,11 @@ export function PublishListingClient() {
           setEditLoadError("מודעה זו לא ניתנת לעריכה.");
           return;
         }
+        if (listing.status === "pending_review") {
+          setEditLoadError("המודעה כבר נשלחה לבדיקת הצוות. נודיע כשיאושר או אם נדרש תיקון נוסף.");
+          return;
+        }
+        setRequiresModerationResubmit(listing.moderationAction === "returned_to_draft");
         applyPublishFormSeed(rentalListingToPublishFormSeed(listing), {
           setTitle,
           setResolvedLocation,
@@ -506,6 +514,20 @@ export function PublishListingClient() {
 
       if (isEditMode) {
         await updateListing(payload);
+        if (requiresModerationResubmit) {
+          setProgress("שולחים לבדיקת הצוות…");
+          try {
+            await submitListingForReview(listingId);
+            setSentForModerationReview(true);
+          } catch {
+            setSavedId(listingId);
+            setError(
+              "השינויים נשמרו, אך השליחה לבדיקת הצוות נכשלה. נסו שוב בעוד רגע מכפתור «שמירה ושליחה לבדיקה».",
+            );
+            setProgress(null);
+            return;
+          }
+        }
       } else {
         await saveListingDraft(payload);
       }
@@ -544,6 +566,7 @@ export function PublishListingClient() {
     editListingId,
     existingVideo,
     videoRemoved,
+    requiresModerationResubmit,
   ]);
 
   if (!isFirebaseConfigured()) {
@@ -595,6 +618,11 @@ export function PublishListingClient() {
     <div className={styles.wrap}>
       <header className={styles.lead}>
         <h1>{pageTitle}</h1>
+        {requiresModerationResubmit ? (
+          <p className={styles.hint}>
+            אחרי שמירה המודעה תישלח לבדיקת הצוות לפני חזרה ללוח. זמן הפרסום לא מתקצר בזמן ההמתנה.
+          </p>
+        ) : null}
       </header>
 
       <section className={styles.card}>
@@ -866,7 +894,9 @@ export function PublishListingClient() {
                 ? "מפרסמים…"
                 : "שומרים…"
             : isEditMode
-              ? "שמירת שינויים"
+              ? requiresModerationResubmit
+                ? "שמירה ושליחה לבדיקה"
+                : "שמירת שינויים"
               : publishAsActive
                 ? "פרסום לפיד"
                 : "שמירת טיוטה"}
@@ -884,9 +914,17 @@ export function PublishListingClient() {
       {savedId ? (
         <div className={styles.successBanner}>
           <p>
-            {isEditMode ? "השינויים נשמרו." : publishAsActive ? "המודעה פורסמה בפיד." : "הטיוטה נשמרה."}
+            {sentForModerationReview
+              ? "המודעה נשלחה לבדיקת הצוות. נודיע כשתאושר ותחזור ללוח — זמן הפרסום נשמר."
+              : isEditMode
+                ? "השינויים נשמרו."
+                : publishAsActive
+                  ? "המודעה פורסמה בפיד."
+                  : "הטיוטה נשמרה."}
           </p>
-          <Link href={`/listings/${savedId}`}>צפייה במודעה</Link>
+          <Link href={sentForModerationReview ? "/account" : `/listings/${savedId}`}>
+            {sentForModerationReview ? "חזרה לאזור אישי" : "צפייה במודעה"}
+          </Link>
         </div>
       ) : null}
     </div>

@@ -1,22 +1,25 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { LegalShell } from "../components/LegalShell";
+import { ContactPageClient } from "./ContactPageClient";
 
 export const metadata: Metadata = {
   title: "יצירת קשר | Lobby",
-  description: "יצירת קשר עם Lobby / לובי.",
+  description: "פנייה לתמיכת Lobby / לובי.",
 };
 
 export default function ContactPage() {
   return (
-    <LegalShell title="יצירת קשר">
-      <p>נשמח לעזור בנושאי חשבון, תקלות טכניות, נגישות ובטיחות.</p>
-      <h2>ערוץ ראשי</h2>
+    <LegalShell title="יצירת קשר" showFooterNote={false}>
+      <p>נשמח לעזור בנושאי חשבון, תקלות טכניות ונגישות.</p>
+      <h2>שליחת פנייה</h2>
       <p>
-        כתבו לנו לאימייל התמיכה של המוצר (יוגדר כשיהיה זמין בסביבת הייצור). בינתיים ניתן להשאיר פנייה דרך מנהלי
-        הפרויקט או דרך ערוצי הפיתוח הפנימיים.
+        מלאו את הטופס — תיפתח שיחה עם צוות התמיכה. אפשר לעקוב ולהמשיך לכתוב ב{" "}
+        <a href="/chat">הודעות</a>.
       </p>
-      <h2>דחיפות ובטיחות</h2>
-      <p>אם מדובר בחשד להונאה פעילה או בסיכון מיידי — ציינו זאת בכותרת הפנייה וצרפו קישור למודעה אם רלוונטי.</p>
+      <Suspense fallback={<p>טוען…</p>}>
+        <ContactPageClient />
+      </Suspense>
     </LegalShell>
   );
 }

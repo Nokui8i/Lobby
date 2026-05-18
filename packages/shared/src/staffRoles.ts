@@ -34,8 +34,12 @@ export const ADMIN_ACTIONS = [
   "users.password_reset",
   "users.delete",
   "users.manage_staff",
+  "listings.view",
+  "listings.update",
   "listings.moderate",
   "inquiries.view",
+  "inquiries.update",
+  "inquiries.resolve",
   "payments.view",
   "site.edit",
 ] as const;
@@ -48,14 +52,16 @@ export type AdminNavId =
   | "reports"
   | "listings"
   | "users"
+  | "inquiries"
   | "site"
   | "staff";
 
 const NAV_MIN_ROLE: Record<AdminNavId, StaffRole> = {
   dashboard: "moderator",
   reports: "moderator",
-  listings: "admin",
+  listings: "moderator",
   users: "moderator",
+  inquiries: "moderator",
   site: "owner",
   staff: "owner",
 };
@@ -69,8 +75,12 @@ const ACTION_MIN_ROLE: Record<AdminActionId, StaffRole> = {
   "users.password_reset": "moderator",
   "users.delete": "owner",
   "users.manage_staff": "owner",
+  "listings.view": "moderator",
+  "listings.update": "admin",
   "listings.moderate": "admin",
   "inquiries.view": "moderator",
+  "inquiries.update": "moderator",
+  "inquiries.resolve": "moderator",
   "payments.view": "admin",
   "site.edit": "owner",
 };

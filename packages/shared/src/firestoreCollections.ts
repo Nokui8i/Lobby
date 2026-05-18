@@ -1,6 +1,9 @@
 export const LISTINGS_COLLECTION = "listings" as const;
 export const CHAT_THREADS_COLLECTION = "chatThreads" as const;
 export const LISTING_REPORTS_COLLECTION = "listingReports" as const;
+export const SUPPORT_INQUIRIES_COLLECTION = "supportInquiries" as const;
+
+export { SUPPORT_INQUIRY_RETENTION_DAYS } from "./supportInquiries";
 export const USERS_COLLECTION = "users" as const;
 
 export { NOTIFICATIONS_COLLECTION } from "./notifications";

@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, limit, orderBy, query, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, limit, query, where } from "firebase/firestore";
 import type { FeedSearchFilters, FeedSortId, RentalListing } from "@lobby/shared";
 import {
   DEFAULT_FEED_SORT_ID,
@@ -66,12 +66,25 @@ export async function fetchListingByIdFromFirestore(listingId: string): Promise<
   return listingFromFirestorePayload(docSnap.id, docSnap.data() as Record<string, unknown>);
 }
 
+const EPOCH_ISO = "1970-01-01T00:00:00.000Z";
+
+function myListingRecencyMs(listing: RentalListing): number {
+  const published = Date.parse(listing.publishedAt);
+  if (Number.isFinite(published) && listing.publishedAt !== EPOCH_ISO) {
+    return published;
+  }
+  const expires = Date.parse(listing.expiresAt);
+  if (Number.isFinite(expires) && listing.expiresAt !== EPOCH_ISO) {
+    return expires;
+  }
+  return 0;
+}
+
 export async function fetchMyListingsFromFirestore(publisherUid: string, maxListings = 80): Promise<RentalListing[]> {
   const db = getFirestoreDb();
   const listingsQuery = query(
     collection(db, LISTINGS_COLLECTION),
     where("publisherId", "==", publisherUid),
-    orderBy("publishedAt", "desc"),
     limit(maxListings),
   );
 
@@ -85,5 +98,6 @@ export async function fetchMyListingsFromFirestore(publisherUid: string, maxList
     }
   }
 
+  listings.sort((a, b) => myListingRecencyMs(b) - myListingRecencyMs(a));
   return listings;
 }

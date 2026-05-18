@@ -278,6 +278,12 @@ function AdminUsersPageInner() {
                 </>
               ) : (
                 <>
+                  <Link
+                    href={`/listings?publisherId=${encodeURIComponent(user.id)}`}
+                    className={styles.listingsLink}
+                  >
+                    מודעות המשתמש
+                  </Link>
                   {canReset ? (
                     <button
                       type="button"

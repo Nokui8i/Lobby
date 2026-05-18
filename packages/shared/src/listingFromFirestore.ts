@@ -4,7 +4,15 @@ import type { ListingStatus, PropertyFeature, RentalListing } from "./types";
 
 const VALID_NEIGHBORHOOD_SOURCES = new Set<NeighborhoodSource>(["official", "learned", "manual", "none"]);
 
-const VALID_STATUSES: ListingStatus[] = ["draft", "active", "frozen", "expired", "rented", "removed"];
+const VALID_STATUSES: ListingStatus[] = [
+  "draft",
+  "pending_review",
+  "active",
+  "frozen",
+  "expired",
+  "rented",
+  "removed",
+];
 
 const VALID_FEATURES = new Set<PropertyFeature>([
   "parking",
@@ -190,6 +198,11 @@ export function listingFromFirestorePayload(
     publishedAt: toIso(data.publishedAt),
     expiresAt: toIso(data.expiresAt),
     moderationDraftNote: asString(data.moderationDraftNote) || undefined,
+    moderationAction: asString(data.moderationAction) || undefined,
+    publishRemainingMs:
+      typeof data.publishRemainingMs === "number" && data.publishRemainingMs > 0
+        ? data.publishRemainingMs
+        : undefined,
     publisher,
   };
 }

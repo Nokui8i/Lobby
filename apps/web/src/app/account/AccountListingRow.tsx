@@ -10,6 +10,8 @@ import {
   LISTING_OWNER_ACTION_CONFIRM_HE,
   LISTING_OWNER_ACTION_LABEL_HE,
   LISTING_STATUS_LABEL_HE,
+  listingPublishCountdownIsUrgent,
+  listingPublishCountdownLabel,
   listingOwnerActionIsDestructive,
   listingOwnerActionsForStatus,
   type ListingOwnerActionId,
@@ -35,6 +37,9 @@ function statusPillClass(status: ListingStatus): string {
     return `${styles.statusPill} ${styles.statusPillFrozen}`;
   }
   if (status === "draft") {
+    return `${styles.statusPill} ${styles.statusPillDraft}`;
+  }
+  if (status === "pending_review") {
     return `${styles.statusPill} ${styles.statusPillDraft}`;
   }
   return `${styles.statusPill} ${styles.statusPillOff}`;
@@ -75,6 +80,8 @@ export function AccountListingRow({
   const rowRef = useRef<HTMLDivElement>(null);
 
   const actions = listingOwnerActionsForStatus(listing.status);
+  const publishCountdown = listingPublishCountdownLabel(listing);
+  const publishCountdownUrgent = listingPublishCountdownIsUrgent(listing);
 
   useEffect(() => {
     if (!menuOpen) {
@@ -210,10 +217,15 @@ export function AccountListingRow({
       ? pendingDialog.confirmLabel
       : "אישור";
 
+  const rowHref =
+    listing.status === "draft" && listing.moderationDraftNote?.trim()
+      ? `/publish?listingId=${listing.id}`
+      : `/listings/${listing.id}`;
+
   return (
     <>
       <div ref={rowRef} className={styles.row}>
-        <Link href={`/listings/${listing.id}`} className={styles.rowMain}>
+        <Link href={rowHref} className={styles.rowMain}>
           <div className={styles.thumb}>
             <Image src={listing.imageUrl} alt="" width={176} height={144} />
           </div>
@@ -223,6 +235,14 @@ export function AccountListingRow({
               ₪{listing.priceIls.toLocaleString("he-IL")} · {formatListingLocationLine(listing)}
             </div>
             <span className={statusPillClass(listing.status)}>{LISTING_STATUS_LABEL_HE[listing.status]}</span>
+            {publishCountdown ? (
+              <p
+                className={`${styles.countdown} ${publishCountdownUrgent ? styles.countdownUrgent : ""}`}
+                role="status"
+              >
+                {publishCountdown}
+              </p>
+            ) : null}
             {listing.status === "draft" && listing.moderationDraftNote?.trim() ? (
               <p className={styles.moderationNote}>{listing.moderationDraftNote.trim()}</p>
             ) : null}

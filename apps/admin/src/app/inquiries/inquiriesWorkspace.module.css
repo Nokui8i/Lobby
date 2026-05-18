@@ -1,0 +1,61 @@
+.fill {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  margin: -28px -32px -48px;
+  height: calc(100vh - 0px);
+  max-height: 100vh;
+}
+
+.root {
+  display: grid;
+  grid-template-columns: 1fr;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  background: #ffffff;
+}
+
+.listPane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-bottom: 1px solid #e4e5e7;
+}
+
+.threadPane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  background: #ffffff;
+}
+
+@media (min-width: 960px) {
+  .root {
+    grid-template-columns: minmax(300px, 34%) minmax(0, 1fr);
+  }
+
+  .listPane {
+    border-bottom: 0;
+    border-inline-end: 1px solid #e4e5e7;
+  }
+}
+
+.threadOpen {
+}
+
+@media (max-width: 959px) {
+  .root:not(.threadOpen) .listPane {
+    flex: 1;
+  }
+
+  .root.threadOpen .listPane {
+    display: none;
+  }
+
+  .root.threadOpen .threadPane {
+    flex: 1;
+  }
+}

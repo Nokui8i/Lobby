@@ -25,6 +25,11 @@ export function firestoreTimestampToMillis(value: unknown): number {
 /**
  * תצוגת שעה ליד בועת צ׳אט (אותו פורמט באתר ובמובייל).
  */
+/** Enter = שליחה, Shift+Enter = שורה חדשה (שדה הודעה) */
+export function isComposerSendKey(key: string, shiftKey: boolean): boolean {
+  return key === "Enter" && !shiftKey;
+}
+
 export function formatChatMessageTime(createdAt: unknown, locale = "he-IL"): string {
   const ms = firestoreTimestampToMillis(createdAt);
   if (ms <= 0) {

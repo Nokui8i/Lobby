@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useLobbyNotificationsOptional } from "@/contexts/LobbyNotificationsContext";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SAVED_LISTINGS_TITLE_HE, type RentalListing } from "@lobby/shared";
@@ -14,7 +15,11 @@ type AccountTab = "active" | "draft" | "offFeed";
 
 function listingMatchesTab(listing: RentalListing, tab: AccountTab): boolean {
   if (tab === "active") {
-    return listing.status === "active" || listing.status === "frozen";
+    return (
+      listing.status === "active" ||
+      listing.status === "frozen" ||
+      listing.status === "pending_review"
+    );
   }
   if (tab === "draft") {
     return listing.status === "draft";
@@ -24,7 +29,9 @@ function listingMatchesTab(listing: RentalListing, tab: AccountTab): boolean {
 
 export function AccountAreaClient() {
   const { user, loading, openAuthModal } = useLobbyAuth();
-  const [tab, setTab] = useState<AccountTab>("active");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") === "draft" ? "draft" : "active";
+  const [tab, setTab] = useState<AccountTab>(initialTab);
   const [rows, setRows] = useState<RentalListing[]>([]);
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState(false);
@@ -48,21 +55,23 @@ export function AccountAreaClient() {
   }, [user]);
 
   useEffect(() => {
-    let cancelled = false;
-    const t = globalThis.setTimeout(() => {
-      if (!cancelled) {
-        void load();
-      }
-    }, 0);
-    return () => {
-      cancelled = true;
-      globalThis.clearTimeout(t);
-    };
+    void load();
   }, [load]);
 
   const filtered = useMemo(() => rows.filter((l) => listingMatchesTab(l, tab)), [rows, tab]);
+  const moderationDraftCount = useMemo(
+    () => rows.filter((l) => l.status === "draft" && Boolean(l.moderationDraftNote?.trim())).length,
+    [rows],
+  );
+  const draftCount = useMemo(() => rows.filter((l) => l.status === "draft").length, [rows]);
   const notifCtx = useLobbyNotificationsOptional();
   const notifUnread = notifCtx?.unreadCount ?? 0;
+
+  useEffect(() => {
+    if (searchParams.get("tab") === "draft") {
+      setTab("draft");
+    }
+  }, [searchParams]);
 
   if (!isFirebaseConfigured()) {
     return (
@@ -122,6 +131,7 @@ export function AccountAreaClient() {
             onClick={() => setTab("draft")}
           >
             טיוטות
+            {draftCount > 0 ? <span className={styles.tabBadge}>{draftCount}</span> : null}
           </button>
           <button
             type="button"
@@ -133,6 +143,16 @@ export function AccountAreaClient() {
             ירדו מהלוח
           </button>
         </div>
+
+        {moderationDraftCount > 0 && tab !== "draft" ? (
+          <p className={styles.moderationBanner} role="status">
+            יש {moderationDraftCount === 1 ? "מודעה שממתינה" : `${moderationDraftCount} מודעות שממתינות`} לתיקון אחרי
+            בדיקת הצוות —{" "}
+            <button type="button" className={styles.moderationBannerLink} onClick={() => setTab("draft")}>
+              מעבר לטיוטות
+            </button>
+          </p>
+        ) : null}
 
         {listLoading && rows.length === 0 ? <p className={styles.muted}>טוען מודעות…</p> : null}
         {listError ? <p className={styles.muted}>לא ניתן לטעון כרגע.</p> : null}

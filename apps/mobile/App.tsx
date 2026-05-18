@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, NativeScrollEvent, ScrollView, useWindowDimensions } from 'react-native';
 import {
+  buildSupportChatRouteId,
   DEFAULT_FEED_SORT_ID,
   EMPTY_FEED_SEARCH_FILTERS,
   feedLocationFilterSummary,
@@ -8,7 +9,9 @@ import {
   type FeedSortId,
   type RentalListing,
 } from '@lobby/shared';
-import { subscribeChatThreadsForUser } from './lib/firebase/chat';
+import { subscribeChatThreadsForUser, type ChatThreadSummary } from './lib/firebase/chat';
+import { subscribeMySupportInquiries, type SupportInquirySummary } from './lib/firebase/supportInquiryThread';
+import { messagesInboxUnreadTotal } from './lib/messagesInbox';
 import { fetchActiveListingsFromFirestore, fetchListingByIdFromFirestore } from './lib/firebase/listingQueries';
 import { getFirestoreDb, ensureFirestoreAuthReady } from './lib/firebase/client';
 import { isFirebaseConfigured } from './lib/firebase/isConfigured';
@@ -16,8 +19,10 @@ import { useLobbyAuth } from './lib/LobbyAuthContext';
 import { AccountScreen } from './AccountScreen';
 import { NotificationsScreen } from './NotificationsScreen';
 import { SettingsScreen } from './SettingsScreen';
+import { ContactScreen } from './ContactScreen';
 import { usePushNotificationRegistration } from './hooks/usePushNotificationRegistration';
 import { useNotificationResponseNavigation } from './hooks/useNotificationResponseNavigation';
+import { isMessagingNotificationKind } from '@lobby/shared';
 import { subscribeMyNotifications } from './lib/firebase/notifications';
 import { SavedListingsScreen } from './SavedListingsScreen';
 import { PublishListingScreen } from './PublishListingScreen';
@@ -27,12 +32,7 @@ import {
   LISTINGS_LOAD_STEP,
   lobbyBanners,
 } from './constants/homeFeed';
-import {
-  type ChatRoute,
-  type FeedListing,
-  type MainTab,
-  createFirestoreFeed,
-} from './navigation/types';
+import { type ChatRoute, type FeedListing, type MainTab, createFirestoreFeed } from './navigation/types';
 import { ChatListView } from './screens/ChatListScreen';
 import { ChatThreadView } from './screens/ChatThreadScreen';
 import { HomeScreen } from './screens/HomeScreen';
@@ -41,13 +41,18 @@ export default function App() {
   const { user, loading: authLoading, openAuthModal, signOutUser } = useLobbyAuth();
   const [pushRegisterTick, setPushRegisterTick] = useState(0);
   usePushNotificationRegistration(pushRegisterTick);
-  useNotificationResponseNavigation(({ threadId }) => {
-    if (threadId) {
-      setNotificationsOpen(false);
-      setAccountOpen(false);
-      setPublishOpen(false);
-      setChatRoute({ kind: 'thread', threadId });
+  useNotificationResponseNavigation(({ threadId, inquiryId }) => {
+    const routeThreadId =
+      threadId || (inquiryId ? buildSupportChatRouteId(inquiryId) : undefined);
+    if (!routeThreadId) {
+      return;
     }
+    setNotificationsOpen(false);
+    setAccountOpen(false);
+    setPublishOpen(false);
+    setContactOpen(false);
+    setMainTab('messages');
+    setChatRoute({ kind: 'thread', threadId: routeThreadId });
   });
   const [chatRoute, setChatRoute] = useState<ChatRoute>(null);
   const [selectedListing, setSelectedListing] = useState<RentalListing | null>(null);
@@ -66,6 +71,8 @@ export default function App() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [contactListingId, setContactListingId] = useState<string | null>(null);
   const [savedOpen, setSavedOpen] = useState(false);
   const [notifUnread, setNotifUnread] = useState(0);
   const bannerScrollRef = useRef<ScrollView | null>(null);
@@ -229,7 +236,16 @@ export default function App() {
     }
 
     let cancelled = false;
-    let unsubscribe: (() => void) | undefined;
+    let unsubscribeChat: (() => void) | undefined;
+    let unsubscribeSupport: (() => void) | undefined;
+    const supportRef: { current: SupportInquirySummary[] } = { current: [] };
+    const chatsRef: { current: ChatThreadSummary[] } = { current: [] };
+
+    const recomputeBadge = () => {
+      if (!cancelled) {
+        setMessagesBadgeCount(messagesInboxUnreadTotal(chatsRef.current, supportRef.current));
+      }
+    };
 
     void (async () => {
       try {
@@ -242,12 +258,24 @@ export default function App() {
         return;
       }
 
-      unsubscribe = subscribeChatThreadsForUser(
-        getFirestoreDb(),
+      const db = getFirestoreDb();
+
+      unsubscribeSupport = subscribeMySupportInquiries(
+        db,
         user.uid,
         (rows) => {
-          const n = rows.reduce((acc, t) => acc + (t.unreadForViewer ?? 0), 0);
-          setMessagesBadgeCount(n);
+          supportRef.current = rows;
+          recomputeBadge();
+        },
+        () => {},
+      );
+
+      unsubscribeChat = subscribeChatThreadsForUser(
+        db,
+        user.uid,
+        (rows) => {
+          chatsRef.current = rows;
+          recomputeBadge();
         },
         () => {},
       );
@@ -255,7 +283,8 @@ export default function App() {
 
     return () => {
       cancelled = true;
-      unsubscribe?.();
+      unsubscribeChat?.();
+      unsubscribeSupport?.();
     };
   }, [user]);
 
@@ -265,7 +294,7 @@ export default function App() {
       return;
     }
     const unsub = subscribeMyNotifications(getFirestoreDb(), user.uid, (rows) => {
-      setNotifUnread(rows.filter((r) => !r.read).length);
+      setNotifUnread(rows.filter((r) => !r.read && !isMessagingNotificationKind(r.kind)).length);
     });
     return () => unsub();
   }, [user]);
@@ -283,12 +312,40 @@ export default function App() {
     );
   }
 
+  if (contactOpen) {
+    return (
+      <ContactScreen
+        initialListingId={contactListingId}
+        onSubmitted={(inquiryId) => {
+          setContactOpen(false);
+          setContactListingId(null);
+          setMainTab('messages');
+          setChatRoute({ kind: 'thread', threadId: buildSupportChatRouteId(inquiryId) });
+        }}
+        onClose={() => {
+          setContactOpen(false);
+          setContactListingId(null);
+          setSettingsOpen(true);
+        }}
+      />
+    );
+  }
+
   if (settingsOpen) {
     return (
       <SettingsScreen
         onClose={() => {
           setSettingsOpen(false);
           setAccountOpen(true);
+        }}
+        onOpenSupport={() => {
+          setSettingsOpen(false);
+          setMainTab('messages');
+          setChatRoute({ kind: 'list' });
+        }}
+        onOpenContact={() => {
+          setSettingsOpen(false);
+          setContactOpen(true);
         }}
         onPushEnabled={() => setPushRegisterTick((t) => t + 1)}
       />
@@ -319,6 +376,24 @@ export default function App() {
               setSelectedListing(listing);
             }
           });
+        }}
+        onEditListing={(listingId) => {
+          setNotificationsOpen(false);
+          setAccountOpen(false);
+          setPublishEditListingId(listingId);
+          setPublishOpen(true);
+        }}
+        onOpenContact={() => {
+          setNotificationsOpen(false);
+          setAccountOpen(false);
+          setContactListingId(null);
+          setContactOpen(true);
+        }}
+        onOpenSupport={(inquiryId) => {
+          setNotificationsOpen(false);
+          setAccountOpen(false);
+          setMainTab('messages');
+          setChatRoute({ kind: 'thread', threadId: buildSupportChatRouteId(inquiryId) });
         }}
       />
     );

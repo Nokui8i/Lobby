@@ -75,6 +75,8 @@ export function listingOwnerActionsForStatus(status: ListingStatus): ListingOwne
       return ["view", "unfreeze", "edit", "delete"];
     case "draft":
       return ["view", "continue_publish", "delete"];
+    case "pending_review":
+      return ["view"];
     case "expired":
       return ["view", "renew", "edit", "delete"];
     case "rented":
