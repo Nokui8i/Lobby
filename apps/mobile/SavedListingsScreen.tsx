@@ -1,14 +1,6 @@
-import { StatusBar } from "expo-status-bar";
+﻿import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import {
-  Image,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   SAVED_LISTING_REMOVED_HE,
   SAVED_LISTINGS_EMPTY_HE,
@@ -16,6 +8,7 @@ import {
   SAVED_LISTINGS_TITLE_HE,
   type RentalListing,
 } from "@lobby/shared";
+import { ListingCard } from "./components/ListingCard";
 import { SaveListingButton } from "./components/SaveListingButton";
 import { fetchListingByIdFromFirestore } from "./lib/firebase/listingQueries";
 import { fetchSavedListingRecords } from "./lib/firebase/savedListings";
@@ -131,35 +124,11 @@ export function SavedListingsScreen({
           }
 
           return (
-            <Pressable
+            <ListingCard
               key={record.listingId}
-              style={styles.card}
+              listing={listing}
               onPress={() => onOpenListing(listing)}
-            >
-              <View style={styles.cardImageWrap}>
-                <Image source={{ uri: listing.imageUrl }} style={styles.cardImage} />
-                <SaveListingButton
-                  listingId={listing.id}
-                  listingTitle={listing.title}
-                  imageUrl={listing.imageUrl}
-                  priceIls={listing.priceIls}
-                  variant="card"
-                  style={styles.cardSave}
-                />
-              </View>
-              <View style={styles.cardBody}>
-                <View style={styles.cardTop}>
-                  <Text style={styles.cardTitle} numberOfLines={2}>
-                    {listing.title}
-                  </Text>
-                  <Text style={styles.cardPrice}>₪{listing.priceIls.toLocaleString("he-IL")}</Text>
-                </View>
-                <Text style={styles.muted}>
-                  {listing.city}
-                  {listing.neighborhood ? ` · ${listing.neighborhood}` : ""} · {listing.rooms} חד׳
-                </Text>
-              </View>
-            </Pressable>
+            />
           );
         })}
       </ScrollView>
@@ -170,7 +139,7 @@ export function SavedListingsScreen({
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#fbfaf7",
+    backgroundColor: "#ffffff",
   },
   header: {
     flexDirection: "row-reverse",
@@ -184,7 +153,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#101820",
+    color: "#202125",
   },
   headerBtn: {
     fontSize: 15,
@@ -215,7 +184,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#101820",
+    color: "#202125",
     textAlign: "center",
     marginBottom: 8,
   },
@@ -224,7 +193,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: "#08b8c8",
+    backgroundColor: "#009de0",
   },
   ctaText: {
     color: "#fff",
@@ -264,13 +233,13 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: "800",
-    color: "#101820",
+    color: "#202125",
     textAlign: "right",
   },
   cardPrice: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#101820",
+    color: "#202125",
   },
   unavailable: {
     padding: 16,

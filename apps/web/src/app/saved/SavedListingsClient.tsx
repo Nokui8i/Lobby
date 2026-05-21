@@ -1,17 +1,15 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SAVED_LISTING_REMOVED_HE, SAVED_LISTINGS_EMPTY_HE, SAVED_LISTINGS_HINT_HE, SAVED_LISTINGS_TITLE_HE, type RentalListing } from "@lobby/shared";
-import { HomeHeader } from "@/app/components/HomeHeader";
-import { SiteFooter } from "@/app/components/SiteFooter";
+import { ListingCard } from "@/components/listings/ListingCard";
+import { LISTING_FEED_GRID_CLASS } from "@/components/listings/listingCardStyles";
 import { SaveListingButton } from "@/components/SaveListingButton";
 import { useLobbyAuth } from "@/contexts/LobbyAuthContext";
 import { fetchListingByIdFromFirestore } from "@/lib/firebase/listingQueries";
 import { fetchSavedListingRecords } from "@/lib/firebase/savedListings";
 import { isFirebaseConfigured } from "@/lib/firebase/isConfigured";
-import styles from "./saved.module.css";
 
 type SavedRow = {
   record: Awaited<ReturnType<typeof fetchSavedListingRecords>>[number];
@@ -64,43 +62,40 @@ export function SavedListingsClient() {
   }, [user]);
 
   return (
-    <main className={styles.page}>
-      <HomeHeader variant="flat" />
-      <div className={styles.shell}>
-        <h1>{SAVED_LISTINGS_TITLE_HE}</h1>
+    <main className="direction-rtl">
+      <div className="mx-auto min-w-0 max-w-[1280px]">
+        <h1 className="mb-2 text-3xl font-black text-graphite">{SAVED_LISTINGS_TITLE_HE}</h1>
+        <p className="mb-6 text-sm text-graphite/60">{SAVED_LISTINGS_HINT_HE}</p>
 
-        {!isFirebaseConfigured() ? (
-          <p className={styles.muted}>אין חיבור לשרת.</p>
-        ) : null}
+        {!isFirebaseConfigured() ? <p className="text-sm text-graphite/60">אין חיבור לשרת.</p> : null}
 
         {!authLoading && !user && isFirebaseConfigured() ? (
-          <div className={styles.emptyBox}>
-            <p>יש להתחבר כדי לראות מודעות ששמרתם.</p>
-            <button type="button" className={styles.cta} onClick={openAuthModal}>
+          <div className="bubble-card p-8 text-center">
+            <p className="mb-3 text-graphite">יש להתחבר כדי לראות מודעות ששמרתם.</p>
+            <button type="button" className="btn-puffy px-8 py-3 text-sm" onClick={openAuthModal}>
               כניסה
             </button>
           </div>
         ) : null}
 
-        {user && loading ? <p className={styles.muted}>טוענים…</p> : null}
+        {user && loading ? <p className="text-sm text-graphite/60">טוענים…</p> : null}
 
         {user && !loading && rows.length === 0 ? (
-          <div className={styles.emptyBox}>
-            <p>{SAVED_LISTINGS_EMPTY_HE}</p>
-            <p className={styles.muted}>{SAVED_LISTINGS_HINT_HE}</p>
-            <Link href="/" className={styles.ctaLink}>
+          <div className="bubble-card p-8 text-center">
+            <p className="mb-2 font-semibold text-graphite">{SAVED_LISTINGS_EMPTY_HE}</p>
+            <Link href="/" className="btn-puffy mt-4 inline-flex px-6 py-2.5 text-sm no-underline">
               חזרה ללוח
             </Link>
           </div>
         ) : null}
 
-        <div className={styles.grid}>
+        <div className={LISTING_FEED_GRID_CLASS}>
           {rows.map(({ record, listing }) => {
             if (!listing || listing.status !== "active") {
               return (
-                <article key={record.listingId} className={styles.cardUnavailable}>
-                  <p className={styles.unavailTitle}>{record.listingTitle || "מודעה"}</p>
-                  <p className={styles.muted}>{SAVED_LISTING_REMOVED_HE}</p>
+                <article key={record.listingId} className="bubble-card border border-dashed border-graphite/15 p-4">
+                  <p className="mb-1.5 font-semibold text-graphite">{record.listingTitle || "מודעה"}</p>
+                  <p className="mb-3 text-sm text-graphite/60">{SAVED_LISTING_REMOVED_HE}</p>
                   <SaveListingButton
                     listingId={record.listingId}
                     listingTitle={record.listingTitle}
@@ -112,37 +107,10 @@ export function SavedListingsClient() {
               );
             }
 
-            return (
-              <article key={record.listingId} className={styles.cardWrap}>
-                <Link href={`/listings/${listing.id}`} className={styles.card}>
-                  <div className={styles.cardImage}>
-                    <Image src={listing.imageUrl} alt={listing.title} width={400} height={260} />
-                    <SaveListingButton
-                      listingId={listing.id}
-                      listingTitle={listing.title}
-                      imageUrl={listing.imageUrl}
-                      priceIls={listing.priceIls}
-                      variant="card"
-                      className={styles.cardSave}
-                    />
-                  </div>
-                  <div className={styles.cardBody}>
-                    <div className={styles.cardTop}>
-                      <h2>{listing.title}</h2>
-                      <strong>₪{listing.priceIls.toLocaleString("he-IL")}</strong>
-                    </div>
-                    <p className={styles.cardMeta}>
-                      {listing.city}
-                      {listing.neighborhood ? ` · ${listing.neighborhood}` : ""} · {listing.rooms} חד׳
-                    </p>
-                  </div>
-                </Link>
-              </article>
-            );
+            return <ListingCard key={record.listingId} listing={{ ...listing, listingId: listing.id }} />;
           })}
         </div>
       </div>
-      <SiteFooter />
     </main>
   );
 }

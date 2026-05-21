@@ -22,8 +22,8 @@ import {
   setAdminStaffRole,
   unbanAdminUser,
 } from "@/lib/firebase/functions";
-import reportStyles from "../reports/reports.module.css";
-import styles from "./users.module.css";
+import { ap, up } from "@/lib/admin-page-classes";
+import { cn } from "@/lib/utils";
 
 type PendingAction =
   | { type: "ban"; user: AdminUserRecord }
@@ -155,21 +155,21 @@ function AdminUsersPageInner() {
 
   if (!canAccess) {
     return (
-      <div className={styles.page}>
-        <p className={styles.noAccess}>אין הרשאה לעמוד לקוחות.</p>
+      <div className={up.page}>
+        <p className={up.noAccess}>אין הרשאה לעמוד לקוחות.</p>
       </div>
     );
   }
 
   return (
-    <div className={styles.page}>
-      <header className={reportStyles.header}>
+    <div className={up.page}>
+      <header className={ap.header}>
         <div>
-          <Link href="/" className={reportStyles.back}>
+          <Link href="/" className={ap.back}>
             ← לוח בקרה
           </Link>
-          <h1>לקוחות</h1>
-          <p className={reportStyles.sub}>
+          <h1 className={ap.title}>לקוחות</h1>
+          <p className={ap.sub}>
             תמיכה: חיפוש, באן, איפוס סיסמה
             {canManageStaff ? " · בעלים: הוספה לצוות" : ""}
             {canDelete ? " · מחיקה" : ""}
@@ -177,7 +177,7 @@ function AdminUsersPageInner() {
         </div>
         <button
           type="button"
-          className={reportStyles.refreshBtn}
+          className={ap.refreshBtn}
           disabled={loading}
           onClick={() => void load(query)}
         >
@@ -186,42 +186,42 @@ function AdminUsersPageInner() {
       </header>
 
       <form
-        className={styles.searchRow}
+        className={up.searchRow}
         onSubmit={(e) => {
           e.preventDefault();
           void load(query);
         }}
       >
         <input
-          className={styles.searchInput}
+          className={up.searchInput}
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="אימייל, שם, או מזהה משתמש…"
           aria-label="חיפוש משתמשים"
         />
-        <button type="submit" className={styles.searchBtn} disabled={loading}>
+        <button type="submit" className={up.searchBtn} disabled={loading}>
           חיפוש
         </button>
       </form>
 
       {toast ? (
-        <p className={toast.kind === "ok" ? styles.toast : `${styles.toast} ${styles.toastError}`} role="status">
+        <p className={cn(up.toast, toast.kind === "err" && up.toastError)} role="status">
           {toast.text}
         </p>
       ) : null}
 
       {resetLink ? (
-        <div className={styles.resetLinkBox} role="region" aria-label="קישור איפוס סיסמה">
+        <div className={up.resetLinkBox} role="region" aria-label="קישור איפוס סיסמה">
           {resetLink}
         </div>
       ) : null}
 
-      {error ? <p className={reportStyles.error}>שגיאה בטעינה.</p> : null}
-      {loading ? <p className={reportStyles.empty}>טוען משתמשים…</p> : null}
-      {!loading && users.length === 0 ? <p className={reportStyles.empty}>לא נמצאו משתמשים.</p> : null}
+      {error ? <p className={ap.error}>שגיאה בטעינה.</p> : null}
+      {loading ? <p className={ap.empty}>טוען משתמשים…</p> : null}
+      {!loading && users.length === 0 ? <p className={ap.empty}>לא נמצאו משתמשים.</p> : null}
 
-      <ul className={reportStyles.list}>
+      <ul className={ap.list}>
         {users.map((user) => {
           const isSelf = me?.uid === user.id;
           const isOwnerAccount = isProtectedOwnerUser(user);
@@ -230,33 +230,33 @@ function AdminUsersPageInner() {
             return null;
           }
           return (
-          <li key={user.id} className={reportStyles.item}>
-            <div className={reportStyles.itemTop}>
+          <li key={user.id} className={ap.item}>
+            <div className={ap.itemTop}>
               <div>
-                {user.banned ? <span className={styles.bannedBadge}>חסום</span> : null}
+                {user.banned ? <span className={up.bannedBadge}>חסום</span> : null}
                 {user.isStaff ? (
-                  <span className={styles.staffBadge}>
+                  <span className={up.staffBadge}>
                     {user.staffRole ? STAFF_ROLE_LABELS[user.staffRole] : "צוות"}
                   </span>
                 ) : null}
-                <h2>{user.displayName}</h2>
-                <p className={reportStyles.listingTitle}>{user.email ?? "ללא אימייל"}</p>
-                <p className={styles.meta}>
+                <h2 className="text-base font-semibold">{user.displayName}</h2>
+                <p className={ap.listingSubtitle}>{user.email ?? "ללא אימייל"}</p>
+                <p className={up.meta}>
                   מזהה: {user.id}
                   {user.providers.length > 0 ? ` · התחברות: ${user.providers.join(", ")}` : ""}
                 </p>
-                {user.banReason ? <p className={styles.meta}>סיבת חסימה: {user.banReason}</p> : null}
+                {user.banReason ? <p className={up.meta}>סיבת חסימה: {user.banReason}</p> : null}
               </div>
-              <time className={reportStyles.time}>עודכן {formatUserDate(user.updatedAt)}</time>
+              <time className={ap.time}>עודכן {formatUserDate(user.updatedAt)}</time>
             </div>
-            <div className={reportStyles.actions}>
+            <div className={ap.rowActions}>
               {isSelf ? (
-                <p className={styles.meta}>זה החשבון שלך — לא ניתן לבצע פעולות על עצמך מהממשק.</p>
+                <p className={up.meta}>זה החשבון שלך — לא ניתן לבצע פעולות על עצמך מהממשק.</p>
               ) : isOwnerAccount ? (
-                <p className={styles.meta}>חשבון בעלים — לא ניתן לבצע פעולות.</p>
+                <p className={up.meta}>חשבון בעלים — לא ניתן לבצע פעולות.</p>
               ) : user.isStaff ? (
                 <>
-                  <p className={styles.meta}>
+                  <p className={up.meta}>
                     משתמש צוות — אין חסימה או מחיקה מכאן.
                     {canManageStaff && user.staffRole !== "owner" ? (
                       <>
@@ -268,7 +268,7 @@ function AdminUsersPageInner() {
                   {canManageStaff && user.staffRole && user.staffRole !== "owner" ? (
                     <button
                       type="button"
-                      className={styles.dangerBtn}
+                      className={up.dangerBtn}
                       disabled={busyId === user.id}
                       onClick={() => setPending({ type: "revoke_staff", user })}
                     >
@@ -280,7 +280,7 @@ function AdminUsersPageInner() {
                 <>
                   <Link
                     href={`/listings?publisherId=${encodeURIComponent(user.id)}`}
-                    className={styles.listingsLink}
+                    className={up.listingsLink}
                   >
                     מודעות המשתמש
                   </Link>
@@ -308,7 +308,7 @@ function AdminUsersPageInner() {
                     ) : (
                       <button
                         type="button"
-                        className={styles.dangerBtn}
+                        className={up.dangerBtn}
                         disabled={busyId === user.id}
                         onClick={() => {
                           setBanReason("");
@@ -340,7 +340,7 @@ function AdminUsersPageInner() {
                   {canDelete ? (
                     <button
                       type="button"
-                      className={styles.dangerBtn}
+                      className={up.dangerBtn}
                       disabled={busyId === user.id}
                       onClick={() => setPending({ type: "delete", user })}
                     >
@@ -366,7 +366,7 @@ function AdminUsersPageInner() {
             <label>
               סיבה (אופציונלי)
               <textarea
-                className={styles.banReasonInput}
+                className={up.banReasonInput}
                 rows={3}
                 maxLength={200}
                 value={banReason}
@@ -461,8 +461,8 @@ export default function AdminUsersPage() {
   return (
     <Suspense
       fallback={
-        <div className={styles.page}>
-          <p className={styles.noAccess}>טוען…</p>
+        <div className={up.page}>
+          <p className={up.noAccess}>טוען…</p>
         </div>
       }
     >

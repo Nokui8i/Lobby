@@ -62,7 +62,7 @@ const NAV_MIN_ROLE: Record<AdminNavId, StaffRole> = {
   listings: "moderator",
   users: "moderator",
   inquiries: "moderator",
-  site: "owner",
+  site: "admin",
   staff: "owner",
 };
 
@@ -82,7 +82,7 @@ const ACTION_MIN_ROLE: Record<AdminActionId, StaffRole> = {
   "inquiries.update": "moderator",
   "inquiries.resolve": "moderator",
   "payments.view": "admin",
-  "site.edit": "owner",
+  "site.edit": "admin",
 };
 
 const ROLE_RANK: Record<StaffRole, number> = {

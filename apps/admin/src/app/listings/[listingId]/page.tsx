@@ -22,8 +22,8 @@ import {
   moderateAdminListing,
   updateAdminListing,
 } from "@/lib/firebase/functions";
-import reportStyles from "../../reports/reports.module.css";
-import styles from "../listings.module.css";
+import { ap } from "@/lib/admin-page-classes";
+import { lp } from "@/lib/admin-page-classes";
 
 type PendingModeration =
   | { type: "remove" }
@@ -154,33 +154,33 @@ export default function AdminListingDetailPage() {
   }
 
   if (loading) {
-    return <p className={reportStyles.empty}>טוען…</p>;
+    return <p className={ap.empty}>טוען…</p>;
   }
 
   if (error || !listing) {
     return (
-      <div className={reportStyles.page}>
-        <Link href="/listings" className={reportStyles.back}>
+      <div className={ap.page}>
+        <Link href="/listings" className={ap.back}>
           ← חזרה למודעות
         </Link>
-        <p className={reportStyles.error}>המודעה לא נמצאה.</p>
+        <p className={ap.error}>המודעה לא נמצאה.</p>
       </div>
     );
   }
 
   return (
-    <div className={reportStyles.page}>
-      <header className={reportStyles.header}>
+    <div className={ap.page}>
+      <header className={ap.header}>
         <div>
-          <Link href="/listings" className={reportStyles.back}>
+          <Link href="/listings" className={ap.back}>
             ← חזרה למודעות
           </Link>
           <h1>{listing.title || "מודעה"}</h1>
-          <p className={reportStyles.sub}>
+          <p className={ap.sub}>
             {LISTING_STATUS_LABEL_HE[listing.status]}
             {countdown ? ` · ${countdown}` : ""}
           </p>
-          <p className={reportStyles.meta}>
+          <p className={ap.meta}>
             מפרסם:{" "}
             <Link href={adminUsersSearchUrl(listing.publisherEmail || listing.publisherId)}>
               {listing.publisherEmail || listing.publisherDisplayName}
@@ -198,27 +198,27 @@ export default function AdminListingDetailPage() {
             href={consumerListingUrl(listing.id)}
             target="_blank"
             rel="noopener noreferrer"
-            className={styles.linkBtn}
+            className={lp.linkBtn}
           >
             צפייה באתר
           </Link>
         )}
       </header>
 
-      {toast ? <p className={reportStyles.sub}>{toast}</p> : null}
+      {toast ? <p className={ap.sub}>{toast}</p> : null}
 
-      <div className={styles.readonlyBlock}>
+      <div className={lp.readonlyBlock}>
         <strong>מיקום (לקריאה בלבד):</strong> {listing.locationLine}
         <br />
         <strong>מזהה:</strong> {listing.id}
       </div>
 
       {canModerate ? (
-        <div className={styles.toolbar}>
+        <div className={lp.toolbar}>
           {listing.status === "pending_review" ? (
             <button
               type="button"
-              className={styles.primaryBtn}
+              className={lp.primaryBtn}
               disabled={busy}
               onClick={() => setPending({ type: "approve" })}
             >
@@ -229,7 +229,7 @@ export default function AdminListingDetailPage() {
             <>
               <button
                 type="button"
-                className={styles.linkBtn}
+                className={lp.linkBtn}
                 disabled={busy}
                 onClick={() => {
                   setDraftNote("");
@@ -240,7 +240,7 @@ export default function AdminListingDetailPage() {
               </button>
               <button
                 type="button"
-                className={styles.dangerBtn}
+                className={lp.dangerBtn}
                 disabled={busy}
                 onClick={() => setPending({ type: "remove" })}
               >
@@ -253,13 +253,13 @@ export default function AdminListingDetailPage() {
 
       {canEdit ? (
         <form
-          className={styles.editForm}
+          className={lp.editForm}
           onSubmit={(e) => {
             e.preventDefault();
             void handleSave();
           }}
         >
-          <div className={styles.field}>
+          <div className={lp.field}>
             <label htmlFor="adm-title">כותרת</label>
             <input
               id="adm-title"
@@ -268,7 +268,7 @@ export default function AdminListingDetailPage() {
               onChange={(e) => setTitle(e.target.value)}
             />
           </div>
-          <div className={styles.field}>
+          <div className={lp.field}>
             <label htmlFor="adm-price">מחיר (₪ לחודש)</label>
             <input
               id="adm-price"
@@ -278,7 +278,7 @@ export default function AdminListingDetailPage() {
               onChange={(e) => setPriceIls(e.target.value)}
             />
           </div>
-          <div className={styles.field}>
+          <div className={lp.field}>
             <label htmlFor="adm-rooms">חדרים</label>
             <input
               id="adm-rooms"
@@ -289,7 +289,7 @@ export default function AdminListingDetailPage() {
               onChange={(e) => setRooms(e.target.value)}
             />
           </div>
-          <div className={styles.field}>
+          <div className={lp.field}>
             <label htmlFor="adm-size">מ״ר</label>
             <input
               id="adm-size"
@@ -299,7 +299,7 @@ export default function AdminListingDetailPage() {
               onChange={(e) => setSizeSqm(e.target.value)}
             />
           </div>
-          <div className={styles.field}>
+          <div className={lp.field}>
             <label htmlFor="adm-floor">קומה / סה״ק</label>
             <div style={{ display: "flex", gap: 8 }}>
               <input
@@ -316,11 +316,11 @@ export default function AdminListingDetailPage() {
               />
             </div>
           </div>
-          <div className={styles.field}>
+          <div className={lp.field}>
             <label htmlFor="adm-entry">כניסה</label>
             <input id="adm-entry" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} />
           </div>
-          <div className={styles.field}>
+          <div className={lp.field}>
             <label htmlFor="adm-type">סוג נכס</label>
             <select
               id="adm-type"
@@ -335,7 +335,7 @@ export default function AdminListingDetailPage() {
               ))}
             </select>
           </div>
-          <div className={styles.field}>
+          <div className={lp.field}>
             <label htmlFor="adm-condition">מצב נכס</label>
             <select
               id="adm-condition"
@@ -350,7 +350,7 @@ export default function AdminListingDetailPage() {
               ))}
             </select>
           </div>
-          <div className={styles.field}>
+          <div className={lp.field}>
             <label htmlFor="adm-desc">תיאור</label>
             <textarea
               id="adm-desc"
@@ -359,12 +359,12 @@ export default function AdminListingDetailPage() {
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
-          <button type="submit" className={styles.primaryBtn} disabled={busy}>
+          <button type="submit" className={lp.primaryBtn} disabled={busy}>
             {busy ? "שומר…" : "שמירת שינויים"}
           </button>
         </form>
       ) : (
-        <p className={reportStyles.sub}>לצפייה בלבד — עריכה למנהלים ומעלה.</p>
+        <p className={ap.sub}>לצפייה בלבד — עריכה למנהלים ומעלה.</p>
       )}
 
       <AdminConfirmModal
@@ -392,10 +392,10 @@ export default function AdminListingDetailPage() {
         open={pending?.type === "return_to_draft"}
         title="להחזיר לטיוטה?"
         description={
-          <label className={reportStyles.draftField}>
-            <span className={reportStyles.draftLabel}>הסבר למפרסם</span>
+          <label className={ap.draftField}>
+            <span className={ap.draftLabel}>הסבר למפרסם</span>
             <textarea
-              className={reportStyles.draftTextarea}
+              className={ap.draftTextarea}
               rows={4}
               value={draftNote}
               onChange={(e) => setDraftNote(e.target.value)}

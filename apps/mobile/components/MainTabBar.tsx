@@ -5,8 +5,8 @@ import type { MainTab } from '../navigation/types';
 import { appStyles } from '../styles/appStyles';
 
 const TAB_ICON_SIZE = 24;
-const TAB_ICON_ACTIVE = '#101820';
-const TAB_ICON_MUTED = '#5c6670';
+const TAB_ICON_ACTIVE = '#009DE0';
+const TAB_ICON_MUTED = '#64748B';
 
 export function MainTabIonicons({ tab, active }: { tab: MainTab; active: boolean }) {
   const color = active ? TAB_ICON_ACTIVE : TAB_ICON_MUTED;

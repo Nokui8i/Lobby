@@ -1,21 +1,22 @@
 import Link from "next/link";
 import { formatChatMessageTime, formatSupportInquiryReference, type SupportInquiryRecord } from "@lobby/shared";
 import { adminUsersSearchUrl, consumerListingUrl } from "@/lib/consumerUrls";
-import styles from "./inquiriesChat.module.css";
+import { ic } from "@/lib/admin-page-classes";
+import { cn } from "@/lib/utils";
 
 export function SupportInquiryIntroCard({ inquiry }: { inquiry: SupportInquiryRecord }) {
   const createdLabel = inquiry.createdAt ? formatChatMessageTime(inquiry.createdAt) : "";
 
   return (
-    <div className={styles.introCard} role="article" aria-label="פרטי פנייה">
-      <p className={styles.introCardTitle}>
+    <div className={ic.introCard} role="article" aria-label="פרטי פנייה">
+      <p className={ic.introCardTitle}>
         פנייה #{formatSupportInquiryReference(inquiry.referenceNumber)} · {inquiry.categoryLabel}
       </p>
-      <p className={styles.introCardMeta}>
+      <p className={ic.introCardMeta}>
         <strong>{inquiry.subject}</strong>
         {createdLabel ? ` · ${createdLabel}` : ""}
       </p>
-      <p className={styles.introCardMeta}>
+      <p className={ic.introCardMeta}>
         ממערכת:{" "}
         <Link href={adminUsersSearchUrl(inquiry.userEmail || inquiry.userId)}>
           {inquiry.userEmail || inquiry.displayName || inquiry.userId}
@@ -32,7 +33,7 @@ export function SupportInquiryIntroCard({ inquiry }: { inquiry: SupportInquiryRe
         ) : null}
       </p>
       {inquiry.userResolvedAt ? (
-        <p className={styles.introCardMeta}>הלקוח סימן שהבעיה נפתרה — אפשר לסגור או להמשיך לענות.</p>
+        <p className={ic.introCardMeta}>הלקוח סימן שהבעיה נפתרה — אפשר לסגור או להמשיך לענות.</p>
       ) : null}
     </div>
   );

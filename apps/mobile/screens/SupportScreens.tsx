@@ -355,7 +355,7 @@ export function SupportThreadView({
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f7f6f2" },
+  safe: { flex: 1, backgroundColor: "#ffffff" },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
   },
   back: { fontSize: 15, fontWeight: "800" },
   title: { fontSize: 20, fontWeight: "900" },
-  link: { fontSize: 14, fontWeight: "800", color: "#08b8c8" },
+  link: { fontSize: 14, fontWeight: "800", color: "#009de0" },
   list: { padding: 16, gap: 10 },
   row: {
     padding: 14,
@@ -394,9 +394,9 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   bubble: { maxWidth: "85%", padding: 10, borderRadius: 12 },
-  bubbleMine: { alignSelf: "flex-end", backgroundColor: "#101820" },
+  bubbleMine: { alignSelf: "flex-end", backgroundColor: "#009DE0" },
   bubbleOther: { alignSelf: "flex-start", backgroundColor: "#fff", borderWidth: 1, borderColor: "rgba(0,0,0,0.08)" },
-  bubbleText: { fontSize: 15, color: "#101820" },
+  bubbleText: { fontSize: 15, color: "#202125" },
   bubbleTextMine: { color: "#fff" },
   bubbleTime: { fontSize: 11, marginTop: 4, opacity: 0.7 },
   bubbleMineText: { color: "#fff" },
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     marginHorizontal: 16,
-    backgroundColor: "#101820",
+    backgroundColor: "#009DE0",
     borderRadius: 999,
     paddingVertical: 12,
     alignItems: "center",

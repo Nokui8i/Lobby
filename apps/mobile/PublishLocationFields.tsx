@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import {
   buildPublishLocationFromStreet,
@@ -122,6 +122,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   locked: { backgroundColor: "#f4f6f8", color: "#4a5560" },
-  hint: { fontSize: 12, color: "#687076", textAlign: "right", marginTop: 4 },
+  hint: { fontSize: 12, color: "#64748b", textAlign: "right", marginTop: 4 },
   error: { fontSize: 12, color: "#b91c1c", textAlign: "right", marginTop: 4 },
 });

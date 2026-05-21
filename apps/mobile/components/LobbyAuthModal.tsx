@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 13,
     fontWeight: "800",
-    color: "#101820",
+    color: "#202125",
     textAlign: "right",
     marginBottom: -4,
   },
@@ -326,12 +326,12 @@ const styles = StyleSheet.create({
   close: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#101820",
+    color: "#202125",
   },
   title: {
     fontSize: 20,
     fontWeight: "900",
-    color: "#101820",
+    color: "#202125",
     textAlign: "right",
   },
   subtitle: {
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     borderRadius: 14,
-    backgroundColor: "#f7f6f2",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
     borderColor: "rgba(16,24,32,0.08)",
   },
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
     paddingVertical: 14,
     borderRadius: 999,
-    backgroundColor: "#101820",
+    backgroundColor: "#009DE0",
   },
   submitDisabled: {
     opacity: 0.5,

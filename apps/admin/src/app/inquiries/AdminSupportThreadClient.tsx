@@ -33,7 +33,8 @@ import {
 } from "@/lib/firebase/supportInquiryThread";
 import { mergeServerMessagesWithPending, pruneAcknowledgedPending } from "@/lib/mergePendingMessages";
 import { SupportInquiryIntroCard } from "./SupportInquiryIntroCard";
-import styles from "./inquiriesChat.module.css";
+import { ic } from "@/lib/admin-page-classes";
+import { cn } from "@/lib/utils";
 
 export function AdminSupportThreadClient({ inquiryId }: { inquiryId: string }) {
   const { staffRole, user } = useAdminAuth();
@@ -181,50 +182,50 @@ export function AdminSupportThreadClient({ inquiryId }: { inquiryId: string }) {
   }
 
   if (inquiry === undefined) {
-    return <p className={styles.muted}>טוען שיחה…</p>;
+    return <p className={ic.muted}>טוען שיחה…</p>;
   }
 
   if (inquiry === null) {
     return (
-      <p className={styles.muted}>
+      <p className={ic.muted}>
         פנייה לא נמצאה. <Link href="/inquiries">חזרה לרשימה</Link>
       </p>
     );
   }
 
   return (
-    <div className={styles.threadShell}>
-      <div className={styles.threadToolbar}>
+    <div className={ic.threadShell}>
+      <div className={ic.threadToolbar}>
         <div>
-          <Link href="/inquiries" className={styles.btn}>
+          <Link href="/inquiries" className={ic.btn}>
             ← רשימה
           </Link>
-          <h1 style={{ marginTop: 8 }}>
+          <h1 className="mt-2 text-base font-extrabold">
             {inquiry.subject} · #{formatSupportInquiryReference(inquiry.referenceNumber)}
           </h1>
-          <p className={styles.threadMeta} style={{ margin: "4px 0 0" }}>
+          <p className={cn(ic.threadMeta, "mt-1")}>
             {SUPPORT_INQUIRY_STATUS_LABELS[inquiry.status]}
             {inquiry.assignedToDisplayName ? ` · ${inquiry.assignedToDisplayName}` : ""}
           </p>
         </div>
-        <div className={styles.toolbarActions}>
+        <div className={ic.toolbarActions}>
           {canAct && isOpen ? (
-            <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} disabled={closing} onClick={() => void handleClose()}>
+            <button type="button" className={`${ic.btn} ${ic.btnPrimary}`} disabled={closing} onClick={() => void handleClose()}>
               {closing ? "סוגר…" : "סגירת פנייה"}
             </button>
           ) : null}
           {canAct && canReopen ? (
-            <button type="button" className={styles.btn} disabled={reopening} onClick={() => void handleReopen()}>
+            <button type="button" className={ic.btn} disabled={reopening} onClick={() => void handleReopen()}>
               {reopening ? "פותח…" : "פתיחה מחדש"}
             </button>
           ) : null}
         </div>
       </div>
 
-      {assignNotice ? <p className={styles.assignedBanner}>{assignNotice}</p> : null}
+      {assignNotice ? <p className={ic.assignedBanner}>{assignNotice}</p> : null}
 
-      <div ref={messagesScrollRef} className={styles.messagesScroll}>
-        <div className={styles.messagesInner}>
+      <div ref={messagesScrollRef} className={ic.messagesScroll}>
+        <div className={ic.messagesInner}>
           <SupportInquiryIntroCard inquiry={inquiry} />
           {displayMessages.map((message) => {
             const staff = message.senderRole === "staff";
@@ -232,12 +233,12 @@ export function AdminSupportThreadClient({ inquiryId }: { inquiryId: string }) {
             return (
               <div
                 key={message.id}
-                className={`${styles.bubbleWrap} ${staff ? styles.bubbleWrapMine : styles.bubbleWrapOther}`}
+                className={`${ic.bubbleWrap} ${staff ? ic.bubbleWrapMine : ic.bubbleWrapOther}`}
               >
-                <div className={`${styles.bubble} ${staff ? styles.bubbleMine : styles.bubbleOther}`}>
+                <div className={`${ic.bubble} ${staff ? ic.bubbleMine : ic.bubbleOther}`}>
                   {message.text}
                 </div>
-                {timeLabel ? <span className={styles.bubbleTime}>{staff ? "צוות" : "לקוח"} · {timeLabel}</span> : null}
+                {timeLabel ? <span className={ic.bubbleTime}>{staff ? "צוות" : "לקוח"} · {timeLabel}</span> : null}
               </div>
             );
           })}
@@ -245,11 +246,11 @@ export function AdminSupportThreadClient({ inquiryId }: { inquiryId: string }) {
         </div>
       </div>
 
-      {error ? <p className={styles.sendError}>{error}</p> : null}
+      {error ? <p className={ic.sendError}>{error}</p> : null}
 
       {canAct && isOpen ? (
-        <div className={styles.composerSticky}>
-          <div className={styles.composer}>
+        <div className={ic.composerSticky}>
+          <div className={ic.composer}>
             <textarea
               value={draft}
               maxLength={SUPPORT_INQUIRY_MESSAGE_MAX}
@@ -269,7 +270,7 @@ export function AdminSupportThreadClient({ inquiryId }: { inquiryId: string }) {
             />
             <button
               type="button"
-              className={`${styles.btn} ${styles.btnPrimary}`}
+              className={`${ic.btn} ${ic.btnPrimary}`}
               disabled={sending || !draft.trim()}
               onClick={() => void handleSend()}
             >
@@ -278,7 +279,7 @@ export function AdminSupportThreadClient({ inquiryId }: { inquiryId: string }) {
           </div>
         </div>
       ) : (
-        <p className={styles.muted}>{isOpen ? "" : "הפנייה סגורה."}</p>
+        <p className={ic.muted}>{isOpen ? "" : "הפנייה סגורה."}</p>
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -7,19 +7,22 @@ import {
   publishContextFromStreet,
   type ResolvedLocation,
 } from "@lobby/shared";
+import { bubble } from "@/components/bubble/styles";
+import { cn } from "@/lib/utils";
 import { isFirebaseConfigured } from "@/lib/firebase/isConfigured";
 import { lobbyPlacesStreetContext } from "@/lib/firebase/places";
 import { LocationSearchInput } from "./LocationSearchInput";
-import styles from "./PublishLocationFields.module.css";
 
 export function PublishLocationFields({
   value,
   onChange,
   disabled = false,
+  compact = false,
 }: {
   value: ResolvedLocation | null;
   onChange: (location: ResolvedLocation | null) => void;
   disabled?: boolean;
+  compact?: boolean;
 }) {
   const [street, setStreet] = useState<ResolvedLocation | null>(null);
   const [streetPickError, setStreetPickError] = useState<string | null>(null);
@@ -89,22 +92,28 @@ export function PublishLocationFields({
   );
 
   return (
-    <div className={styles.stack}>
+    <div className={cn("flex flex-col direction-rtl", compact ? "gap-2" : "gap-3.5")}>
       <LocationSearchInput
         label="רחוב"
         placeholder="הקלידו שם רחוב ועיר…"
         required
         variant="publish"
+        compact={compact}
         value={street}
         onChange={onStreetChange}
         disabled={disabled}
       />
 
       {street && street.kind === "street" ? (
-        <ReadOnlyField label="עיר" value={street.cityLabel} help={LOCATION_FIELD_HELP_HE.officialLocked} />
+        <ReadOnlyField
+          label="עיר"
+          value={street.cityLabel}
+          help={LOCATION_FIELD_HELP_HE.officialLocked}
+          compact={compact}
+        />
       ) : null}
 
-      {streetPickError ? <p className={styles.error}>{streetPickError}</p> : null}
+      {streetPickError ? <p className="m-0 text-[13px] text-red-700">{streetPickError}</p> : null}
     </div>
   );
 }
@@ -113,16 +122,27 @@ function ReadOnlyField({
   label,
   value,
   help,
+  compact = false,
 }: {
   label: string;
   value: string;
   help: string;
+  compact?: boolean;
 }) {
   return (
-    <div className={styles.field}>
-      <span className={styles.fieldLabel}>{label}</span>
-      <input className={`${styles.input} ${styles.inputLocked}`} value={value} readOnly disabled />
-      <p className={styles.hint}>{help}</p>
+    <div className={cn("flex flex-col", compact ? "gap-1" : "gap-1.5")}>
+      <span className={cn(bubble.label, compact && "text-[13px]")}>{label}</span>
+      <input
+        className={cn(
+          bubble.input,
+          compact && "h-11 rounded-xl px-4 text-[15px]",
+          "bg-[#F5FAFC] text-[#4a5560]",
+        )}
+        value={value}
+        readOnly
+        disabled
+      />
+      <p className={cn("m-0 text-[#a3aed0]", compact ? "text-[11px]" : "text-[13px]")}>{help}</p>
     </div>
   );
 }

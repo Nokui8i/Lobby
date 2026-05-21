@@ -21,7 +21,7 @@ export function SavedListingsHeaderButton({ onPress }: { onPress: () => void }) 
       onPress={handlePress}
       style={styles.btn}
     >
-      <Ionicons name="heart-outline" size={22} color="#687076" />
+      <Ionicons name="heart-outline" size={22} color="#64748B" />
     </Pressable>
   );
 }

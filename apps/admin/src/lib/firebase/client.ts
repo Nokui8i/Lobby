@@ -1,6 +1,7 @@
 import { getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type User } from "firebase/auth";
 import { type Firestore, getFirestore, initializeFirestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 import { isFirebaseConfigured } from "./isConfigured";
 
 const firebaseConfig = {
@@ -42,6 +43,10 @@ export function getFirestoreDb(): Firestore {
 
 export function getFirebaseAuth() {
   return getAuth(getFirebaseApp());
+}
+
+export function getFirebaseStorage(): FirebaseStorage {
+  return getStorage(getFirebaseApp());
 }
 
 /** מחדש JWT עם staffRole לפני מאזיני Firestore — מונע permission-denied באדמין. */

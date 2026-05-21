@@ -1,35 +1,143 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@source "../**/*.{ts,tsx}";
+
+@variant dark (&:is(.dark *));
+
 :root {
-  --background: #f0efea;
-  --foreground: #101820;
-  --muted: #5c6670;
+  --brand: #009de0;
+  --brand-hover: #008ecb;
+  --brand-dark: #202125;
+  --surface-soft: #f8f9fa;
+  --lobby-border: #f1f5f9;
+  --shadow-bubble: 0 1px 2px rgba(15, 23, 42, 0.06), 0 4px 14px rgba(15, 23, 42, 0.07);
+  --shadow-panel: 0 1px 3px rgba(15, 23, 42, 0.08), 0 8px 28px rgba(15, 23, 42, 0.06);
+  --shadow-puffy: 0 1px 2px rgba(0, 157, 224, 0.18);
+  --shadow-float: 0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 6px rgba(15, 23, 42, 0.04);
+
+  --background: #ffffff;
+  --foreground: var(--brand-dark);
   --card: #ffffff;
-  --line: #e4e0d6;
-  --brand: #08b8c8;
-  --brand-strong: #0299a8;
-  --brand-soft: #e8fbfd;
-  --ink-soft: #25313b;
+  --card-foreground: var(--brand-dark);
+  --popover: #ffffff;
+  --popover-foreground: var(--brand-dark);
+  --primary: var(--brand);
+  --primary-foreground: #ffffff;
+  --primary-hover: var(--brand-hover);
+  --secondary: var(--surface-soft);
+  --secondary-foreground: var(--brand-dark);
+  --muted: var(--surface-soft);
+  --muted-foreground: #64748b;
+  --accent: #e8f5fd;
+  --accent-foreground: var(--brand-dark);
+  --destructive: #f53939;
+  --destructive-foreground: #ffffff;
+  --border: var(--lobby-border);
+  --input: var(--lobby-border);
+  --ring: var(--brand);
+  --radius: 16px;
+
+  --font-inter: var(--font-inter-next);
+  --font-display: var(--font-heebo-next);
+  --display-family: var(--font-display), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --text-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --lobby-brand: var(--brand);
 }
 
-html,
-body {
-  max-width: 100vw;
-  min-height: 100%;
-  margin: 0;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: "Segoe UI", Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-brand: var(--brand);
+  --font-sans: var(--display-family);
+  --font-display: var(--display-family);
 }
 
-* {
-  box-sizing: border-box;
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    height: 100%;
+    scrollbar-gutter: stable;
+    background: #ffffff;
+  }
+  body {
+    @apply bg-white text-foreground antialiased;
+    min-height: 100%;
+    font-family: var(--display-family);
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
-a {
-  color: inherit;
+@layer utilities {
+  .bg-brand {
+    background-color: var(--brand);
+  }
+  .text-brand {
+    color: var(--brand);
+  }
+  .text-graphite {
+    color: var(--brand-dark);
+  }
+  .bg-soft {
+    background: var(--surface-soft);
+  }
+  .shadow-bubble {
+    box-shadow: var(--shadow-bubble);
+  }
+  .shadow-panel {
+    box-shadow: var(--shadow-panel);
+  }
+  .shadow-puffy {
+    box-shadow: var(--shadow-puffy);
+  }
+  .btn-puffy {
+    background: var(--brand);
+    color: #fff;
+    box-shadow: var(--shadow-puffy);
+    transition: background 0.15s ease;
+  }
+  .btn-puffy:hover {
+    background: var(--brand-hover);
+  }
+  .bubble-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: var(--shadow-bubble);
+    border: 1px solid #e2e8f0;
+  }
+  .admin-surface {
+    background: var(--surface-soft);
+  }
 }
 
-button,
-input {
-  font: inherit;
+@layer components {
+  .bubble-panel {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: var(--shadow-bubble);
+    border: 1px solid var(--lobby-border);
+    padding: 1.25rem 1.5rem;
+  }
 }

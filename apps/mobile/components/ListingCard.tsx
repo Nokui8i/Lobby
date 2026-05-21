@@ -1,4 +1,10 @@
-import { featureLabels, type RentalListing } from '@lobby/shared';
+import {
+  formatListingCardAddressLine,
+  formatListingCardDistrictLine,
+  formatListingCardPriceIls,
+  formatListingCardRoomsLine,
+  type RentalListing,
+} from '@lobby/shared';
 import { Image, Pressable, Text, View } from 'react-native';
 import { SaveListingButton } from './SaveListingButton';
 import { appStyles } from '../styles/appStyles';
@@ -10,10 +16,16 @@ export function ListingCard({
   listing: RentalListing;
   onPress: () => void;
 }) {
+  const addressLine = formatListingCardAddressLine(listing) || listing.title.trim();
+  const districtLine = formatListingCardDistrictLine(listing);
+  const roomsLine = formatListingCardRoomsLine(listing.rooms);
+  const metaLine = [districtLine, roomsLine].filter(Boolean).join(' · ');
+  const price = formatListingCardPriceIls(listing.priceIls);
+
   return (
     <Pressable style={appStyles.card} onPress={onPress}>
       <View style={appStyles.imageWrap}>
-        <Image source={{ uri: listing.imageUrl }} style={appStyles.cardImage} />
+        <Image source={{ uri: listing.imageUrl }} style={appStyles.cardImage} resizeMode="cover" />
         <SaveListingButton
           listingId={listing.id}
           listingTitle={listing.title}
@@ -24,23 +36,19 @@ export function ListingCard({
         />
       </View>
       <View style={appStyles.cardBody}>
-        <View style={appStyles.cardTop}>
-          <Text style={appStyles.cardTitle}>{listing.title}</Text>
-          <Text style={appStyles.cardPrice}>₪{listing.priceIls.toLocaleString('he-IL')}</Text>
-        </View>
-        <Text style={appStyles.cardMeta}>
-          {[listing.streetLine?.trim(), listing.neighborhood?.trim(), listing.city]
-            .filter(Boolean)
-            .join(", ")}{" "}
-          · {listing.rooms} חד׳ · {listing.sizeSqm} מ״ר
+        <Text style={appStyles.cardPrice}>
+          {price.symbol} {price.amount}
         </Text>
-        <View style={appStyles.featureRow}>
-          {listing.features.slice(0, 3).map((feature) => (
-            <Text key={feature} style={appStyles.featurePill}>
-              {featureLabels[feature]}
-            </Text>
-          ))}
-        </View>
+        {addressLine ? (
+          <Text style={appStyles.cardAddress} numberOfLines={1}>
+            {addressLine}
+          </Text>
+        ) : null}
+        {metaLine ? (
+          <Text style={appStyles.cardMeta} numberOfLines={1}>
+            {metaLine}
+          </Text>
+        ) : null}
       </View>
     </Pressable>
   );

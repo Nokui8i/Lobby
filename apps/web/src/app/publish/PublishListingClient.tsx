@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   LISTING_DESCRIPTION_MAX_CHARACTERS,
@@ -12,6 +12,10 @@ import {
   featureLabels,
   listingPropertyConditionLabel,
   listingPropertyTypeLabel,
+  LISTING_PUBLISH_ROOM_OPTIONS,
+  publishRoomsFromOptionId,
+  listingContactPhoneValidationError,
+  normalizeListingContactPhone,
   publishLocationIsValid,
   rentalListingToPublishFormSeed,
   rentalListingToResolvedLocation,
@@ -21,6 +25,7 @@ import {
   type ResolvedLocation,
 } from "@lobby/shared";
 import { PublishLocationFields } from "@/components/PublishLocationFields";
+import { PublishSelectField } from "@/components/publish/PublishSelectField";
 import { useLobbyAuth } from "@/contexts/LobbyAuthContext";
 import { ensureFirestoreAuthReady } from "@/lib/firebase/client";
 import { isFirebaseConfigured } from "@/lib/firebase/isConfigured";
@@ -34,7 +39,86 @@ import {
   uploadListingImage,
   uploadListingVideo,
 } from "@/lib/firebase/publishListing";
-import styles from "./publish.module.css";
+import { bubble } from "@/components/bubble/styles";
+import { PublishStepper } from "@/components/lovable/ui";
+import { Camera, FileText, Home, MapPin, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+/** בלי שמירת היסטוריה בדפדפן */
+const publishNoRemember = {
+  autoComplete: "off",
+  autoCorrect: "off",
+  autoCapitalize: "off",
+  spellCheck: false,
+  "data-lpignore": "true",
+  "data-1p-ignore": true,
+} as const;
+
+const pubInputCls =
+  "h-11 w-full rounded-xl border border-slate-200/80 bg-soft px-4 text-[15px] font-medium text-graphite outline-none placeholder:text-graphite/40 transition focus:border-brand focus:bg-soft focus:ring-2 focus:ring-brand/15";
+
+const PUBLISH_WIZARD_STEPS = [
+  { id: 1, label: "פרטי הנכס", icon: Home },
+  { id: 2, label: "מיקום", icon: MapPin },
+  { id: 3, label: "תמונות", icon: Camera },
+  { id: 4, label: "תיאור ומחיר", icon: FileText },
+  { id: 5, label: "סיום", icon: Sparkles },
+] as const;
+
+const pub = {
+  wrap: "mx-auto w-full max-w-[1000px] px-4 pb-10 sm:px-6",
+  gate: "bubble-card px-6 py-7 text-right",
+  hint: "text-[15px] font-semibold leading-snug text-graphite/60",
+  lead: "mb-2 text-right",
+  leadTitle: "text-2xl font-black leading-tight text-graphite md:text-[28px]",
+  stepHeading: "mb-4 text-right text-base font-bold text-graphite",
+  grid2: "grid grid-cols-1 gap-3 sm:grid-cols-2",
+  field: "flex flex-col gap-1.5 text-right [&_label]:text-[13px] [&_label]:font-semibold [&_label]:text-graphite",
+  input: pubInputCls,
+  textarea: cn(pubInputCls, "min-h-[100px] h-auto resize-y py-3 leading-relaxed"),
+  stepCard: "bubble-card p-5 sm:p-6",
+  stepNav: "mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5",
+  stepNavActions: "flex flex-row-reverse flex-wrap items-center gap-3",
+  req: "text-red-800 font-black",
+  inlineLabel: "text-[13px] font-bold text-graphite",
+  fieldSpan2: "col-span-full",
+  entryRow: "mt-0.5 flex w-full flex-wrap items-center justify-start gap-x-3 gap-y-2",
+  radioLbl:
+    "inline-flex cursor-pointer items-center gap-2 text-[15px] font-semibold text-graphite [&_input]:h-[18px] [&_input]:w-[18px] [&_input]:shrink-0 [&_input]:accent-[#009DE0]",
+  featuresGrid: "flex flex-wrap justify-end gap-2",
+  featureChip:
+    "inline-flex cursor-pointer select-none items-center gap-2 rounded-full border border-[#e9edf7] bg-[#F5FAFC] px-3.5 py-2 text-sm font-bold [&_input]:h-4 [&_input]:w-4 [&_input]:accent-[#009DE0]",
+  featureChipOn: "!border-brand/35 !bg-brand/10",
+  mediaRow: "mb-3 flex flex-wrap justify-end gap-2.5",
+  thumb: "relative h-20 w-20 overflow-hidden rounded-xl border border-[#e9edf7] [&_img]:h-full [&_img]:w-full [&_img]:object-cover",
+  thumbRemove:
+    "absolute top-1 left-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border-0 bg-[#101820]/70 text-sm font-black text-white",
+  addPhoto:
+    "inline-flex min-h-10 cursor-pointer items-center justify-center rounded-full border border-dashed border-[#e9edf7] bg-[#F5FAFC] px-4 text-sm font-bold text-graphite [&_input]:hidden",
+  videoRow: "flex flex-col items-end gap-2",
+  videoPreview: "w-full overflow-hidden rounded-xl border border-[#e9edf7] bg-[#101820]",
+  videoPreviewEl: "block max-h-[220px] w-full bg-black",
+  videoName: "max-w-full truncate text-[13px] font-semibold text-graphite/50",
+  publisherReadonly: "m-0 text-right text-[15px] font-medium text-graphite [&_strong]:font-bold",
+  check:
+    "mb-2.5 flex items-start gap-2.5 text-right [&_input]:mt-0.5 [&_input]:h-[18px] [&_input]:w-[18px] [&_input]:shrink-0 [&_input]:accent-[#009DE0] [&_span]:text-sm [&_span]:font-medium [&_span]:leading-snug [&_span]:text-graphite",
+  btnPrimary: cn(
+    bubble.btnPrimary,
+    "inline-flex min-h-11 min-w-[8rem] items-center justify-center px-7 py-3 text-[15px] disabled:cursor-not-allowed",
+  ),
+  btnSecondary: cn(
+    bubble.btnOutline,
+    "inline-flex min-h-11 min-w-[6rem] items-center justify-center px-6 py-3 text-[15px] disabled:cursor-not-allowed disabled:opacity-45",
+  ),
+  exitLink:
+    "inline-flex min-h-11 items-center text-[15px] font-semibold text-graphite/55 underline-offset-2 transition hover:text-brand hover:underline",
+  progress: "mt-2 text-right text-xs font-bold text-graphite/45",
+  errorBanner:
+    "mt-3 rounded-xl border border-red-800/20 bg-red-500/10 px-3 py-2 text-right text-xs font-bold text-[#7a1520]",
+  successBanner:
+    "mt-3 rounded-xl border border-[#009DE0]/30 bg-[#E8F5FD]/60 px-3.5 py-3 text-right [&_a]:inline-flex [&_a]:text-sm [&_a]:font-bold [&_a]:text-[#009DE0] [&_a]:underline [&_p]:mb-2 [&_p]:text-sm [&_p]:font-semibold [&_p]:text-graphite",
+} as const;
+
 
 const ALL_FEATURES: PropertyFeature[] = [
   "parking",
@@ -64,12 +148,13 @@ function applyPublishFormSeed(
   seed: ListingPublishFormSeed,
   setters: {
     setTitle: (v: string) => void;
+    setContactPhone: (v: string) => void;
     setResolvedLocation: (v: ResolvedLocation | null) => void;
     setHouseNumber: (v: string) => void;
     setPropertyTypeId: (v: string) => void;
     setPropertyConditionId: (v: string) => void;
     setPriceIls: (v: string) => void;
-    setRooms: (v: string) => void;
+    setRoomsOptionId: (v: string) => void;
     setSizeSqm: (v: string) => void;
     setFloor: (v: string) => void;
     setTotalFloors: (v: string) => void;
@@ -87,11 +172,12 @@ function applyPublishFormSeed(
   },
 ) {
   setters.setTitle(seed.title);
+  setters.setContactPhone(seed.contactPhone);
   setters.setHouseNumber(seed.houseNumber);
   setters.setPropertyTypeId(seed.propertyTypeId);
   setters.setPropertyConditionId(seed.propertyConditionId);
   setters.setPriceIls(seed.priceIls);
-  setters.setRooms(seed.rooms);
+  setters.setRoomsOptionId(seed.roomsOptionId);
   setters.setSizeSqm(seed.sizeSqm);
   setters.setFloor(seed.floor);
   setters.setTotalFloors(seed.totalFloors);
@@ -141,6 +227,7 @@ function getVideoDurationSeconds(file: File): Promise<number> {
 }
 
 export function PublishListingClient() {
+  const router = useRouter();
   const { user, loading, openAuthModal, displayNameForUi } = useLobbyAuth();
   const searchParams = useSearchParams();
   const editListingId = searchParams.get("listingId");
@@ -152,12 +239,13 @@ export function PublishListingClient() {
   const [editLoadError, setEditLoadError] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
   const [resolvedLocation, setResolvedLocation] = useState<ResolvedLocation | null>(null);
   const [houseNumber, setHouseNumber] = useState("");
   const [propertyTypeId, setPropertyTypeId] = useState("");
   const [propertyConditionId, setPropertyConditionId] = useState("");
   const [priceIls, setPriceIls] = useState("");
-  const [rooms, setRooms] = useState("");
+  const [roomsOptionId, setRoomsOptionId] = useState("");
   const [sizeSqm, setSizeSqm] = useState("");
   const [floor, setFloor] = useState("");
   const [totalFloors, setTotalFloors] = useState("");
@@ -178,6 +266,14 @@ export function PublishListingClient() {
   const [savedId, setSavedId] = useState<string | null>(null);
   const [sentForModerationReview, setSentForModerationReview] = useState(false);
   const [requiresModerationResubmit, setRequiresModerationResubmit] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
+
+  const roomPickerOptions = useMemo(() => {
+    if (!roomsOptionId || LISTING_PUBLISH_ROOM_OPTIONS.some((o) => o.id === roomsOptionId)) {
+      return LISTING_PUBLISH_ROOM_OPTIONS;
+    }
+    return [...LISTING_PUBLISH_ROOM_OPTIONS, { id: roomsOptionId, label: roomsOptionId, minRooms: null, maxRooms: null }];
+  }, [roomsOptionId]);
 
   const toggleFeature = useCallback((key: PropertyFeature) => {
     setFeatures((prev) => (prev.includes(key) ? prev.filter((f) => f !== key) : [...prev, key]));
@@ -249,7 +345,7 @@ export function PublishListingClient() {
           setPropertyTypeId,
           setPropertyConditionId,
           setPriceIls,
-          setRooms,
+          setRoomsOptionId,
           setSizeSqm,
           setFloor,
           setTotalFloors,
@@ -371,9 +467,11 @@ export function PublishListingClient() {
     if (!Number.isFinite(price) || price < 1) {
       return "נא להזין מחיר חודשי תקין בשקלים.";
     }
-    const roomsNum = Number(rooms);
-    if (!Number.isFinite(roomsNum) || roomsNum < 0.5 || roomsNum > 20) {
-      return "נא להזין מספר חדרים בין 0.5 ל־20.";
+    if (!roomsOptionId) {
+      return "נא לבחור מספר חדרים.";
+    }
+    if (publishRoomsFromOptionId(roomsOptionId) == null) {
+      return "נא לבחור מספר חדרים תקין.";
     }
     const sqm = Number(sizeSqm);
     if (!Number.isFinite(sqm) || sqm < 5 || sqm > 2000) {
@@ -395,6 +493,10 @@ export function PublishListingClient() {
         return "נא לבחור תאריך כניסה.";
       }
     }
+    const phoneError = listingContactPhoneValidationError(contactPhone);
+    if (phoneError) {
+      return phoneError;
+    }
     if (!description.trim()) {
       return "נא למלא תיאור (״על הדירה״).";
     }
@@ -415,12 +517,13 @@ export function PublishListingClient() {
     return null;
   }, [
     title,
+    contactPhone,
     resolvedLocation,
     houseNumber,
     propertyTypeId,
     propertyConditionId,
     priceIls,
-    rooms,
+    roomsOptionId,
     sizeSqm,
     floor,
     totalFloors,
@@ -432,6 +535,126 @@ export function PublishListingClient() {
     acceptNoBroker,
     isEditMode,
   ]);
+
+  const validateWizardStep = useCallback(
+    (step: number): string | null => {
+      if (step === 1) {
+        if (!title.trim()) {
+          return "נא למלא כותרת למודעה.";
+        }
+        if (title.trim().length > LISTING_TITLE_MAX_CHARACTERS) {
+          return `הכותרת ארוכה מדי (עד ${LISTING_TITLE_MAX_CHARACTERS} תווים).`;
+        }
+        if (!propertyTypeId) {
+          return "נא לבחור סוג נכס.";
+        }
+        if (!propertyConditionId) {
+          return "נא לבחור מצב נכס.";
+        }
+        if (!roomsOptionId) {
+          return "נא לבחור מספר חדרים.";
+        }
+        if (publishRoomsFromOptionId(roomsOptionId) == null) {
+          return "נא לבחור מספר חדרים תקין.";
+        }
+        const sqm = Number(sizeSqm);
+        if (!Number.isFinite(sqm) || sqm < 5 || sqm > 2000) {
+          return "נא להזין שטח במ״ר הגיוני.";
+        }
+        const fl = Number(floor);
+        const tf = Number(totalFloors);
+        if (!Number.isFinite(fl) || fl < 0 || fl > 80) {
+          return "נא להזין קומה תקינה.";
+        }
+        if (!Number.isFinite(tf) || tf < 1 || tf > 120) {
+          return "נא להזין מספר קומות בבניין תקין.";
+        }
+        if (tf < fl) {
+          return "מספר הקומות בבניין חייב להיות לפחות כמו הקומה של הדירה.";
+        }
+        if (!entryImmediate && !entryDateIso.trim()) {
+          return "נא לבחור תאריך כניסה.";
+        }
+        return null;
+      }
+      if (step === 2) {
+        const locationError = publishLocationIsValid(resolvedLocation, houseNumber);
+        return locationError;
+      }
+      if (step === 3) {
+        if (images.length < 1) {
+          return "נא להעלות לפחות תמונה אחת.";
+        }
+        return null;
+      }
+      if (step === 4) {
+        const price = Number(priceIls);
+        if (!Number.isFinite(price) || price < 1) {
+          return "נא להזין מחיר חודשי תקין בשקלים.";
+        }
+        if (!description.trim()) {
+          return "נא למלא תיאור (״על הדירה״).";
+        }
+        if (description.trim().length > LISTING_DESCRIPTION_MAX_CHARACTERS) {
+          return `התיאור ארוך מדי (עד ${LISTING_DESCRIPTION_MAX_CHARACTERS} תווים).`;
+        }
+        return null;
+      }
+      if (step === 5) {
+        const phoneError = listingContactPhoneValidationError(contactPhone);
+        if (phoneError) {
+          return phoneError;
+        }
+        if (!isEditMode) {
+          if (!acceptTerms) {
+            return "יש לאשר את תנאי השימוש והפרסום.";
+          }
+          if (!acceptNoBroker) {
+            return "יש לאשר שהמודעה עומדת במדיניות ללא דמי תיווך לשוכרים.";
+          }
+        }
+        return null;
+      }
+      return null;
+    },
+    [
+      title,
+      propertyTypeId,
+      propertyConditionId,
+      roomsOptionId,
+      sizeSqm,
+      floor,
+      totalFloors,
+      entryImmediate,
+      entryDateIso,
+      resolvedLocation,
+      houseNumber,
+      images.length,
+      priceIls,
+      description,
+      contactPhone,
+      acceptTerms,
+      acceptNoBroker,
+      isEditMode,
+    ],
+  );
+
+  const goWizardBack = useCallback(() => {
+    setError(null);
+    setWizardStep((s) => Math.max(1, s - 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const goWizardNext = useCallback(() => {
+    const stepError = validateWizardStep(wizardStep);
+    if (stepError) {
+      setError(stepError);
+      return;
+    }
+    setError(null);
+    setWizardStep((s) => Math.min(PUBLISH_WIZARD_STEPS.length, s + 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [validateWizardStep, wizardStep]);
 
   const handleSubmit = useCallback(async () => {
     setError(null);
@@ -492,6 +715,7 @@ export function PublishListingClient() {
         listingId,
         publisherId: user.uid,
         publisherDisplayName: displayNameForUi,
+        contactPhone: normalizeListingContactPhone(contactPhone),
         title: title.trim(),
         location: resolvedLocation!,
         houseNumber: houseNumber.trim(),
@@ -500,7 +724,7 @@ export function PublishListingClient() {
         propertyConditionId,
         propertyConditionLabel: listingPropertyConditionLabel(propertyConditionId),
         priceIls: Number(priceIls),
-        rooms: Number(rooms),
+        rooms: publishRoomsFromOptionId(roomsOptionId)!,
         sizeSqm: Number(sizeSqm),
         floor: Number(floor),
         totalFloors: Number(totalFloors),
@@ -532,8 +756,9 @@ export function PublishListingClient() {
         await saveListingDraft(payload);
       }
 
-      setSavedId(listingId);
       setProgress(null);
+      router.replace(`/listings/${listingId}`);
+      return;
     } catch {
       setError("השמירה נכשלה. בדקו חיבור, הרשאות Storage, ונסו שוב.");
       setProgress(null);
@@ -547,12 +772,13 @@ export function PublishListingClient() {
     videoFile,
     videoDurationSec,
     title,
+    contactPhone,
     resolvedLocation,
     houseNumber,
     propertyTypeId,
     propertyConditionId,
     priceIls,
-    rooms,
+    roomsOptionId,
     sizeSqm,
     floor,
     totalFloors,
@@ -567,12 +793,13 @@ export function PublishListingClient() {
     existingVideo,
     videoRemoved,
     requiresModerationResubmit,
+    router,
   ]);
 
   if (!isFirebaseConfigured()) {
     return (
-      <div className={styles.wrap}>
-        <div className={styles.gate}>
+      <div className={pub.wrap}>
+        <div className={pub.gate}>
           <h1>פרסום דירה</h1>
           <p>Firebase לא הוגדר באתר. הוסיפו משתני סביבה כדי להפעיל פרסום.</p>
         </div>
@@ -582,16 +809,16 @@ export function PublishListingClient() {
 
   if (loading || editLoading) {
     return (
-      <div className={styles.wrap}>
-        <p className={styles.hint}>{editLoading ? "טוענים את המודעה לעריכה…" : "טוענים…"}</p>
+      <div className={pub.wrap}>
+        <p className={pub.hint}>{editLoading ? "טוענים את המודעה לעריכה…" : "טוענים…"}</p>
       </div>
     );
   }
 
   if (editLoadError) {
     return (
-      <div className={styles.wrap}>
-        <div className={styles.gate}>
+      <div className={pub.wrap}>
+        <div className={pub.gate}>
           <h1>{pageTitle}</h1>
           <p>{editLoadError}</p>
           <Link href="/account">חזרה לאזור אישי</Link>
@@ -602,8 +829,8 @@ export function PublishListingClient() {
 
   if (!user) {
     return (
-      <div className={styles.wrap}>
-        <div className={styles.gate}>
+      <div className={pub.wrap}>
+        <div className={pub.gate}>
           <h1>פרסום דירה</h1>
           <p>כדי לפרסם מודעה צריך להתחבר או להירשם בחינם. אחרי ההתחברות תוכלו למלא פרטים, להעלות מדיה ולשמור טיוטה.</p>
           <button type="button" onClick={openAuthModal}>
@@ -615,304 +842,384 @@ export function PublishListingClient() {
   }
 
   return (
-    <div className={styles.wrap}>
-      <header className={styles.lead}>
-        <h1>{pageTitle}</h1>
+    <div className={pub.wrap}>
+      <header className={pub.lead}>
+        <h1 className={pub.leadTitle}>{pageTitle}</h1>
         {requiresModerationResubmit ? (
-          <p className={styles.hint}>
+          <p className={cn(pub.hint, "mt-2")}>
             אחרי שמירה המודעה תישלח לבדיקת הצוות לפני חזרה ללוח. זמן הפרסום לא מתקצר בזמן ההמתנה.
           </p>
         ) : null}
       </header>
 
-      <section className={styles.card}>
-        <h2>פרטי הנכס</h2>
-        <div className={styles.grid2}>
-          <div className={styles.field}>
-            <label htmlFor="pub-title">כותרת קצרה למודעה</label>
-            <input
-              id="pub-title"
-              value={title}
-              maxLength={LISTING_TITLE_MAX_CHARACTERS}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-          <div className={styles.field}>
-            <label htmlFor="pub-property-type">
-              סוג הנכס<span className={styles.req}>*</span>
-            </label>
-            <select
-              id="pub-property-type"
-              className={styles.selectLg}
-              value={propertyTypeId}
-              onChange={(e) => setPropertyTypeId(e.target.value)}
-            >
-              <option value="" disabled>
-                בחרו
-              </option>
-              {LISTING_PROPERTY_TYPE_OPTIONS.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className={styles.field}>
-            <label htmlFor="pub-property-condition">
-              מצב הנכס<span className={styles.req}>*</span>
-            </label>
-            <select
-              id="pub-property-condition"
-              className={styles.selectLg}
-              value={propertyConditionId}
-              onChange={(e) => setPropertyConditionId(e.target.value)}
-            >
-              <option value="" disabled>
-                בחרו
-              </option>
-              {LISTING_PROPERTY_CONDITION_OPTIONS.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className={`${styles.field} ${styles.fieldSpan2}`}>
-            <span className={styles.inlineLabel}>
-              מיקום הדירה<span className={styles.req}>*</span>
-            </span>
-            <PublishLocationFields
-              value={resolvedLocation}
-              onChange={setResolvedLocation}
-              disabled={busy}
-            />
-          </div>
-          <div className={styles.field}>
-            <label htmlFor="pub-house">
-              מספר בית<span className={styles.req}>*</span>
-            </label>
-            <input
-              id="pub-house"
-              value={houseNumber}
-              onChange={(e) => setHouseNumber(e.target.value)}
-              disabled={busy}
-            />
-          </div>
-          <div className={styles.field}>
-            <label htmlFor="pub-price">מחיר לחודש (₪)</label>
-            <input
-              id="pub-price"
-              inputMode="numeric"
-              value={priceIls}
-              onChange={(e) => setPriceIls(e.target.value.replace(/[^\d]/g, ""))}
-            />
-          </div>
-          <div className={styles.field}>
-            <label htmlFor="pub-rooms">חדרים</label>
-            <input
-              id="pub-rooms"
-              inputMode="decimal"
-              value={rooms}
-              onChange={(e) => setRooms(e.target.value.replace(/[^\d.]/g, ""))}
-            />
-          </div>
-          <div className={styles.field}>
-            <label htmlFor="pub-sqm">שטח במ״ר</label>
-            <input
-              id="pub-sqm"
-              inputMode="numeric"
-              value={sizeSqm}
-              onChange={(e) => setSizeSqm(e.target.value.replace(/[^\d]/g, ""))}
-            />
-          </div>
-          <div className={styles.field}>
-            <label htmlFor="pub-floor">קומה</label>
-            <input
-              id="pub-floor"
-              inputMode="numeric"
-              value={floor}
-              onChange={(e) => setFloor(e.target.value.replace(/[^\d]/g, ""))}
-            />
-          </div>
-          <div className={styles.field}>
-            <label htmlFor="pub-total">קומות בבניין</label>
-            <input
-              id="pub-total"
-              inputMode="numeric"
-              value={totalFloors}
-              onChange={(e) => setTotalFloors(e.target.value.replace(/[^\d]/g, ""))}
-            />
-          </div>
-          <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
-            <span className={styles.inlineLabel}>כניסה</span>
-            <div className={styles.entryRow}>
-              <label className={styles.radioLbl}>
-                <input type="radio" name="entry-mode" checked={entryImmediate} onChange={() => setEntryImmediate(true)} />
-                מיידי
-              </label>
-              <label className={styles.radioLbl}>
+      <PublishStepper steps={[...PUBLISH_WIZARD_STEPS]} currentStep={wizardStep} className="!mb-3" />
+
+      <form className={pub.stepCard} autoComplete="off" onSubmit={(e) => e.preventDefault()}>
+        {/* מונע הצעות אוטומטיות ב-Chrome */}
+        <input type="text" className="hidden" tabIndex={-1} aria-hidden autoComplete="off" />
+        {wizardStep === 1 ? (
+          <>
+            <h2 className={pub.stepHeading}>פרטי הנכס</h2>
+            <div className={pub.grid2}>
+              <div className={cn(pub.field, pub.fieldSpan2)}>
+                <label htmlFor="pub-title">כותרת קצרה למודעה</label>
                 <input
-                  type="radio"
-                  name="entry-mode"
-                  checked={!entryImmediate}
-                  onChange={() => {
-                    setEntryImmediate(false);
-                    setEntryDateIso((prev) => prev || todayIsoDate());
-                  }}
-                />
-                בתאריך
-              </label>
-              {!entryImmediate ? (
-                <input
-                  className={styles.dateInput}
-                  type="date"
-                  value={entryDateIso}
-                  onChange={(e) => setEntryDateIso(e.target.value)}
-                />
-              ) : null}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className={styles.card}>
-        <h2>על הדירה</h2>
-        <div className={styles.field}>
-          <label htmlFor="pub-desc">תיאור חופשי</label>
-          <textarea
-            id="pub-desc"
-            value={description}
-            maxLength={LISTING_DESCRIPTION_MAX_CHARACTERS}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
-      </section>
-
-      <section className={styles.card}>
-        <h2>מאפיינים</h2>
-        <div className={styles.featuresGrid}>
-          {ALL_FEATURES.map((key) => {
-            const on = features.includes(key);
-            return (
-              <label key={key} className={`${styles.featureChip} ${on ? styles.featureChipOn : ""}`}>
-                <input type="checkbox" checked={on} onChange={() => toggleFeature(key)} />
-                {featureLabels[key]}
-              </label>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className={styles.card}>
-        <h2>מדיה</h2>
-        <div className={styles.mediaRow}>
-          {images.map((slot) => (
-            <div key={slot.id} className={styles.thumb}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={slot.preview} alt="" />
-              <button type="button" className={styles.thumbRemove} onClick={() => removeImage(slot.id)} aria-label="הסרת תמונה">
-                ×
-              </button>
-            </div>
-          ))}
-          {images.length < LISTING_MEDIA_LIMITS.maxImages ? (
-            <label className={styles.addPhoto}>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(e) => {
-                  addImages(e.target.files);
-                  e.target.value = "";
-                }}
-              />
-              + תמונות
-            </label>
-          ) : null}
-        </div>
-        <div className={styles.videoRow}>
-          <label className={styles.addPhoto}>
-            <input
-              ref={videoInputRef}
-              type="file"
-              accept="video/*"
-              onChange={(e) => void onVideoChange(e.target.files)}
-            />
-            {hasVideoAttached ? "החלפת סרטון" : "סרטון"}
-          </label>
-          {hasVideoAttached && videoPreviewSrc ? (
-            <>
-              <div className={styles.videoPreview}>
-                <video
-                  className={styles.videoPreviewEl}
-                  src={videoPreviewSrc}
-                  controls
-                  playsInline
-                  preload="metadata"
+                  id="pub-title"
+                  name="lobby-pub-title"
+                  className={pub.input}
+                  {...publishNoRemember}
+                  value={title}
+                  maxLength={LISTING_TITLE_MAX_CHARACTERS}
+                  onChange={(e) => setTitle(e.target.value)}
                 />
               </div>
-              <span className={styles.videoName}>
-                {videoFile
-                  ? videoFile.name
-                  : `סרטון קיים (${existingVideo?.durationSeconds ?? videoDurationSec ?? 0} שנ׳)`}
-              </span>
-              <button type="button" className={styles.btnGhost} onClick={clearVideo}>
-                הסרת סרטון
-              </button>
-            </>
-          ) : null}
+              <PublishSelectField
+                id="pub-property-type"
+                label="סוג הנכס"
+                required
+                value={propertyTypeId}
+                onChange={setPropertyTypeId}
+                options={LISTING_PROPERTY_TYPE_OPTIONS}
+                disabled={busy}
+              />
+              <PublishSelectField
+                id="pub-property-condition"
+                label="מצב הנכס"
+                required
+                value={propertyConditionId}
+                onChange={setPropertyConditionId}
+                options={LISTING_PROPERTY_CONDITION_OPTIONS}
+                disabled={busy}
+              />
+              <PublishSelectField
+                id="pub-rooms"
+                label="חדרים"
+                required
+                value={roomsOptionId}
+                onChange={setRoomsOptionId}
+                options={roomPickerOptions}
+                disabled={busy}
+              />
+              <div className={pub.field}>
+                <label htmlFor="pub-sqm">שטח במ״ר</label>
+                <input
+                  id="pub-sqm"
+                  name="lobby-pub-sqm"
+                  className={pub.input}
+                  {...publishNoRemember}
+                  inputMode="numeric"
+                  value={sizeSqm}
+                  onChange={(e) => setSizeSqm(e.target.value.replace(/[^\d]/g, ""))}
+                />
+              </div>
+              <div className={pub.field}>
+                <label htmlFor="pub-floor">קומה</label>
+                <input
+                  id="pub-floor"
+                  name="lobby-pub-floor"
+                  className={pub.input}
+                  {...publishNoRemember}
+                  inputMode="numeric"
+                  value={floor}
+                  onChange={(e) => setFloor(e.target.value.replace(/[^\d]/g, ""))}
+                />
+              </div>
+              <div className={pub.field}>
+                <label htmlFor="pub-total">קומות בבניין</label>
+                <input
+                  id="pub-total"
+                  name="lobby-pub-total-floors"
+                  className={pub.input}
+                  {...publishNoRemember}
+                  inputMode="numeric"
+                  value={totalFloors}
+                  onChange={(e) => setTotalFloors(e.target.value.replace(/[^\d]/g, ""))}
+                />
+              </div>
+              <div className={cn(pub.field, pub.fieldSpan2, "items-start")}>
+                <span className={pub.inlineLabel}>כניסה</span>
+                <div className={pub.entryRow}>
+                  <label className={pub.radioLbl}>
+                    <input type="radio" name="entry-mode" checked={entryImmediate} onChange={() => setEntryImmediate(true)} />
+                    מיידי
+                  </label>
+                  <label className={pub.radioLbl}>
+                    <input
+                      type="radio"
+                      name="entry-mode"
+                      checked={!entryImmediate}
+                      onChange={() => {
+                        setEntryImmediate(false);
+                        setEntryDateIso((prev) => prev || todayIsoDate());
+                      }}
+                    />
+                    בתאריך
+                  </label>
+                  {!entryImmediate ? (
+                    <input
+                      name="lobby-pub-entry-date"
+                      className={cn(pub.input, "min-w-[160px] !w-auto")}
+                      type="date"
+                      {...publishNoRemember}
+                      value={entryDateIso}
+                      onChange={(e) => setEntryDateIso(e.target.value)}
+                    />
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        {wizardStep === 2 ? (
+          <>
+            <h2 className={pub.stepHeading}>מיקום</h2>
+            <div className={pub.grid2}>
+              <div className={cn(pub.field, pub.fieldSpan2)}>
+                <span className={pub.inlineLabel}>
+                  מיקום הדירה<span className={pub.req}>*</span>
+                </span>
+                <PublishLocationFields
+                  value={resolvedLocation}
+                  onChange={setResolvedLocation}
+                  disabled={busy}
+                  compact
+                />
+              </div>
+              <div className={pub.field}>
+                <label htmlFor="pub-house">
+                  מספר בית<span className={pub.req}>*</span>
+                </label>
+                <input
+                  id="pub-house"
+                  name="lobby-pub-house"
+                  className={pub.input}
+                  {...publishNoRemember}
+                  value={houseNumber}
+                  onChange={(e) => setHouseNumber(e.target.value)}
+                  disabled={busy}
+                />
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        {wizardStep === 3 ? (
+          <>
+            <h2 className={pub.stepHeading}>תמונות וסרטון</h2>
+            <div className={pub.mediaRow}>
+              {images.map((slot) => (
+                <div key={slot.id} className={pub.thumb}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={slot.preview} alt="" />
+                  <button
+                    type="button"
+                    className={pub.thumbRemove}
+                    onClick={() => removeImage(slot.id)}
+                    aria-label="הסרת תמונה"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {images.length < LISTING_MEDIA_LIMITS.maxImages ? (
+                <label className={pub.addPhoto}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => {
+                      addImages(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                  + תמונות
+                </label>
+              ) : null}
+            </div>
+            <p className="mb-3 text-right text-[12px] font-medium text-graphite/55">
+              לפחות תמונה אחת · עד {LISTING_MEDIA_LIMITS.maxImages} תמונות
+            </p>
+            <div className={pub.videoRow}>
+              <label className={pub.addPhoto}>
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/*"
+                  onChange={(e) => void onVideoChange(e.target.files)}
+                />
+                {hasVideoAttached ? "החלפת סרטון" : "סרטון (אופציונלי)"}
+              </label>
+              {hasVideoAttached && videoPreviewSrc ? (
+                <>
+                  <div className={pub.videoPreview}>
+                    <video
+                      className={pub.videoPreviewEl}
+                      src={videoPreviewSrc}
+                      controls
+                      playsInline
+                      preload="metadata"
+                    />
+                  </div>
+                  <span className={pub.videoName}>
+                    {videoFile
+                      ? videoFile.name
+                      : `סרטון קיים (${existingVideo?.durationSeconds ?? videoDurationSec ?? 0} שנ׳)`}
+                  </span>
+                  <button type="button" className={pub.btnSecondary} onClick={clearVideo}>
+                    הסרת סרטון
+                  </button>
+                </>
+              ) : null}
+            </div>
+          </>
+        ) : null}
+
+        {wizardStep === 4 ? (
+          <>
+            <h2 className={pub.stepHeading}>תיאור ומחיר</h2>
+            <div className={pub.grid2}>
+              <div className={pub.field}>
+                <label htmlFor="pub-price">מחיר לחודש (₪)</label>
+                <input
+                  id="pub-price"
+                  name="lobby-pub-price"
+                  className={pub.input}
+                  {...publishNoRemember}
+                  inputMode="numeric"
+                  value={priceIls}
+                  onChange={(e) => setPriceIls(e.target.value.replace(/[^\d]/g, ""))}
+                />
+              </div>
+              <div className={cn(pub.field, pub.fieldSpan2)}>
+                <label htmlFor="pub-desc">תיאור חופשי</label>
+                <textarea
+                  id="pub-desc"
+                  name="lobby-pub-description"
+                  className={pub.textarea}
+                  {...publishNoRemember}
+                  value={description}
+                  maxLength={LISTING_DESCRIPTION_MAX_CHARACTERS}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+              <div className={cn(pub.field, pub.fieldSpan2)}>
+                <span className={pub.inlineLabel}>מאפיינים</span>
+                <div className={pub.featuresGrid}>
+                  {ALL_FEATURES.map((key) => {
+                    const on = features.includes(key);
+                    return (
+                      <label key={key} className={cn(pub.featureChip, on && pub.featureChipOn)}>
+                        <input type="checkbox" checked={on} onChange={() => toggleFeature(key)} />
+                        {featureLabels[key]}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        {wizardStep === 5 ? (
+          <>
+            <h2 className={pub.stepHeading}>סיום ופרסום</h2>
+            <div className={pub.grid2}>
+              <div className={cn(pub.field, pub.fieldSpan2)}>
+                <label htmlFor="publish-contact-phone">
+                  טלפון ליצירת קשר <span className={pub.req}>*</span>
+                </label>
+                <input
+                  id="publish-contact-phone"
+                  name="lobby-pub-phone"
+                  type="tel"
+                  inputMode="tel"
+                  dir="ltr"
+                  className={cn(pub.input, "text-left")}
+                  placeholder="05X-XXXXXXX"
+                  {...publishNoRemember}
+                  value={contactPhone}
+                  onChange={(e) => setContactPhone(e.target.value)}
+                />
+                <p className="m-0 text-right text-[12px] font-medium text-graphite/55">
+                  מוצג במודעה לשוכרים שרוצים להתקשר.
+                </p>
+              </div>
+              <div className={cn(pub.field, pub.fieldSpan2)}>
+                <p className={pub.publisherReadonly}>
+                  שם להצגה: <strong>{displayNameForUi}</strong>
+                </p>
+              </div>
+            </div>
+            {!isEditMode ? (
+              <div className="mt-3 border-t border-slate-100 pt-3">
+                <h3 className="mb-2 text-right text-xs font-bold text-graphite">אישורים</h3>
+                <label className={pub.check}>
+                  <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} />
+                  <span>קראתי ומסכימים לתנאי השימוש, מדיניות הפרסום והנגישות של Lobby.</span>
+                </label>
+                <label className={pub.check}>
+                  <input type="checkbox" checked={acceptNoBroker} onChange={(e) => setAcceptNoBroker(e.target.checked)} />
+                  <span>מאשרים שהמודעה אינה דורשת דמי תיווך או עמלה מהשוכר, ושהמידע נכון לידיעתכם.</span>
+                </label>
+              </div>
+            ) : null}
+          </>
+        ) : null}
+
+        {error ? (
+          <div className={cn(pub.errorBanner, "mt-4")} role="alert">
+            {error}
+          </div>
+        ) : null}
+
+        <div className={pub.stepNav}>
+          <div className={pub.stepNavActions}>
+            {wizardStep < 5 ? (
+              <>
+                <button type="button" className={pub.btnPrimary} onClick={goWizardNext}>
+                  המשך
+                </button>
+                <button
+                  type="button"
+                  className={pub.btnSecondary}
+                  disabled={wizardStep === 1}
+                  onClick={goWizardBack}
+                >
+                  חזרה
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" className={pub.btnPrimary} disabled={busy} onClick={() => void handleSubmit()}>
+                  {busy
+                    ? isEditMode
+                      ? "שומרים…"
+                      : publishAsActive
+                        ? "מפרסמים…"
+                        : "שומרים…"
+                    : isEditMode
+                      ? requiresModerationResubmit
+                        ? "שמירה ושליחה לבדיקה"
+                        : "שמירת שינויים"
+                      : publishAsActive
+                        ? "פרסום לפיד"
+                        : "שמירת טיוטה"}
+                </button>
+                <button type="button" className={pub.btnSecondary} disabled={busy} onClick={goWizardBack}>
+                  חזרה
+                </button>
+              </>
+            )}
+          </div>
+          <Link href="/" className={pub.exitLink}>
+            חזרה לפיד
+          </Link>
         </div>
-      </section>
-
-      <section className={styles.card}>
-        <h2>פרטי מפרסם</h2>
-        <p className={styles.publisherReadonly}>
-          שם להצגה: <strong>{displayNameForUi}</strong>
-        </p>
-      </section>
-
-      {!isEditMode ? (
-        <section className={styles.card}>
-          <h2>אישורים</h2>
-          <label className={styles.check}>
-            <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} />
-            <span>קראתי ומסכימים לתנאי השימוש, מדיניות הפרסום והנגישות של Lobby.</span>
-          </label>
-          <label className={styles.check}>
-            <input type="checkbox" checked={acceptNoBroker} onChange={(e) => setAcceptNoBroker(e.target.checked)} />
-            <span>מאשרים שהמודעה אינה דורשת דמי תיווך או עמלה מהשוכר, ושהמידע נכון לידיעתכם.</span>
-          </label>
-        </section>
-      ) : null}
-
-      <div className={styles.actions}>
-        <button type="button" className={styles.btnPrimary} disabled={busy} onClick={() => void handleSubmit()}>
-          {busy
-            ? isEditMode
-              ? "שומרים…"
-              : publishAsActive
-                ? "מפרסמים…"
-                : "שומרים…"
-            : isEditMode
-              ? requiresModerationResubmit
-                ? "שמירה ושליחה לבדיקה"
-                : "שמירת שינויים"
-              : publishAsActive
-                ? "פרסום לפיד"
-                : "שמירת טיוטה"}
-        </button>
-        <Link href="/" className={styles.btnGhost} style={{ textAlign: "center", lineHeight: 1.2 }}>
-          חזרה לפיד
-        </Link>
-      </div>
-      {progress ? <p className={styles.progress}>{progress}</p> : null}
-      {error ? (
-        <div className={styles.errorBanner} role="alert">
-          {error}
-        </div>
-      ) : null}
+      </form>
+      {progress ? <p className={pub.progress}>{progress}</p> : null}
       {savedId ? (
-        <div className={styles.successBanner}>
+        <div className={pub.successBanner}>
           <p>
             {sentForModerationReview
               ? "המודעה נשלחה לבדיקת הצוות. נודיע כשתאושר ותחזור ללוח — זמן הפרסום נשמר."

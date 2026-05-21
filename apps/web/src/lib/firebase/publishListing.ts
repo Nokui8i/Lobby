@@ -1,7 +1,11 @@
 import { collection, deleteField, doc, serverTimestamp, setDoc, Timestamp, updateDoc } from "firebase/firestore";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 import type { ListingVideo, PropertyFeature, ResolvedLocation } from "@lobby/shared";
-import { LISTINGS_COLLECTION, listingLocationToFirestoreRecord } from "@lobby/shared";
+import {
+  LISTINGS_COLLECTION,
+  listingLocationToFirestoreRecord,
+  listingPublisherFirestoreRecord,
+} from "@lobby/shared";
 import { getFirebaseApp } from "./client";
 import { getFirestoreDb } from "./client";
 
@@ -56,6 +60,7 @@ export interface SaveListingDraftInput {
   listingId: string;
   publisherId: string;
   publisherDisplayName: string;
+  contactPhone: string;
   title: string;
   location: ResolvedLocation;
   houseNumber: string;
@@ -103,11 +108,11 @@ export async function saveListingDraft(input: SaveListingDraftInput): Promise<vo
     publishedAt: serverTimestamp(),
     expiresAt,
     publisherId: input.publisherId,
-    publisher: {
-      id: input.publisherId,
-      displayName: input.publisherDisplayName.trim() || "מפרסם",
-      responseTimeLabel: "—",
-    },
+    publisher: listingPublisherFirestoreRecord({
+      publisherId: input.publisherId,
+      publisherDisplayName: input.publisherDisplayName,
+      contactPhone: input.contactPhone,
+    }),
   });
 }
 
@@ -138,11 +143,11 @@ export async function updateListing(input: UpdateListingInput): Promise<void> {
     gallery: input.galleryUrls,
     features: input.features,
     description: input.description.trim(),
-    publisher: {
-      id: input.publisherId,
-      displayName: input.publisherDisplayName.trim() || "מפרסם",
-      responseTimeLabel: "—",
-    },
+    publisher: listingPublisherFirestoreRecord({
+      publisherId: input.publisherId,
+      publisherDisplayName: input.publisherDisplayName,
+      contactPhone: input.contactPhone,
+    }),
   };
 
   if (input.removeVideo) {

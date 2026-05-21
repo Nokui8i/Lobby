@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import styles from "./LobbyConfirmDialog.module.css";
+import { bubble } from "@/components/bubble/styles";
+import { cn } from "@/lib/utils";
 
 export type LobbyConfirmDialogVariant = "default" | "destructive" | "info";
 
@@ -46,14 +47,15 @@ export function LobbyConfirmDialog({
   }
 
   const isInfo = variant === "info";
-  const confirmClass =
-    variant === "destructive"
-      ? `${styles.confirm} ${styles.confirmDestructive}`
-      : `${styles.confirm}${isInfo ? ` ${styles.confirmInfo}` : ""}`;
+  const confirmClass = cn(
+    "cursor-pointer rounded-xl px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-55",
+    variant === "destructive" ? "bg-[#a21e2e] hover:bg-[#8a1826]" : "btn-puffy",
+    isInfo && "w-full",
+  );
 
   return (
     <div
-      className={styles.overlay}
+      className="fixed inset-0 z-[120] grid place-items-center bg-[#101820]/30 p-[18px] backdrop-blur-sm"
       role="presentation"
       onClick={() => {
         if (!busy) {
@@ -62,22 +64,27 @@ export function LobbyConfirmDialog({
       }}
     >
       <div
-        className={styles.dialog}
+        className="bubble-card w-full max-w-[380px] p-5 pb-4 shadow-bubble direction-rtl"
         role={isInfo ? "dialog" : "alertdialog"}
         aria-modal="true"
         aria-labelledby="lobby-confirm-title"
         aria-describedby="lobby-confirm-body"
         onClick={(e) => e.stopPropagation()}
       >
-        <p id="lobby-confirm-title" className={styles.title}>
+        <p id="lobby-confirm-title" className={cn("m-0 text-[1.05rem] font-extrabold", bubble.heading)}>
           {title}
         </p>
-        <p id="lobby-confirm-body" className={styles.body}>
+        <p id="lobby-confirm-body" className="mt-2.5 mb-0 text-sm leading-relaxed text-graphite/60">
           {body}
         </p>
-        <div className={`${styles.actions}${isInfo ? ` ${styles.actionsSingle}` : ""}`}>
+        <div className={cn("mt-5 flex flex-row-reverse justify-end gap-2.5", isInfo && "justify-stretch")}>
           {!isInfo ? (
-            <button type="button" className={styles.cancel} disabled={busy} onClick={onCancel}>
+            <button
+              type="button"
+              className={cn(bubble.btnOutline, "px-4 py-2.5 disabled:cursor-not-allowed disabled:opacity-55")}
+              disabled={busy}
+              onClick={onCancel}
+            >
               {cancelLabel}
             </button>
           ) : null}

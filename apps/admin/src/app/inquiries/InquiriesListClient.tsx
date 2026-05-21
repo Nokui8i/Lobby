@@ -21,7 +21,8 @@ import { fetchAdminSupportInquiries } from "@/lib/firebase/functions";
 import { ensureAdminFirestoreAuthReady, getFirestoreDb } from "@/lib/firebase/client";
 import { isFirebaseConfigured } from "@/lib/firebase/isConfigured";
 import { subscribeAdminSupportInquiries } from "@/lib/firebase/supportInquiryThread";
-import styles from "./inquiriesChat.module.css";
+import { ic } from "@/lib/admin-page-classes";
+import { cn } from "@/lib/utils";
 
 export function InquiriesListClient({ activeInquiryId }: { activeInquiryId?: string | null }) {
   const { user } = useAdminAuth();
@@ -90,10 +91,10 @@ export function InquiriesListClient({ activeInquiryId }: { activeInquiryId?: str
   }, [inquiries, filters]);
 
   return (
-    <div className={styles.shell}>
-      <div className={styles.listToolbar}>
-        <h2 className={styles.listTitle}>פניות תמיכה</h2>
-        <div className={styles.listFilters}>
+    <div className={ic.shell}>
+      <div className={ic.listToolbar}>
+        <h2 className={ic.listTitle}>פניות תמיכה</h2>
+        <div className={ic.listFilters}>
           <select
             value={filters.status}
             aria-label="סטטוס"
@@ -131,7 +132,7 @@ export function InquiriesListClient({ activeInquiryId }: { activeInquiryId?: str
           />
           <button
             type="button"
-            className={styles.btn}
+            className={ic.btn}
             disabled={loading}
             onClick={() => {
               void fetchAdminSupportInquiries()
@@ -144,12 +145,12 @@ export function InquiriesListClient({ activeInquiryId }: { activeInquiryId?: str
         </div>
       </div>
 
-      {error ? <p className={styles.sendError}>שגיאה בטעינה</p> : null}
-      {loading ? <p className={styles.muted}>טוען…</p> : null}
+      {error ? <p className={ic.sendError}>שגיאה בטעינה</p> : null}
+      {loading ? <p className={ic.muted}>טוען…</p> : null}
 
-      <div className={styles.listScroll}>
-        {!loading && filtered.length === 0 ? <p className={styles.muted}>אין פניות.</p> : null}
-        <ul className={styles.list}>
+      <div className={ic.listScroll}>
+        {!loading && filtered.length === 0 ? <p className={ic.muted}>אין פניות.</p> : null}
+        <ul className={ic.list}>
           {filtered.map((inquiry) => {
             const active = activeInquiryId === inquiry.id;
             const unread = inquiry.unreadForStaff ?? 0;
@@ -159,28 +160,28 @@ export function InquiriesListClient({ activeInquiryId }: { activeInquiryId?: str
               <li key={inquiry.id}>
                 <Link
                   href={`/inquiries/${inquiry.id}`}
-                  className={`${styles.threadCard} ${active ? styles.threadCardActive : ""} ${unread > 0 ? styles.threadCardUnread : ""}`}
+                  className={`${ic.threadCard} ${active ? ic.threadCardActive : ""} ${unread > 0 ? ic.threadCardUnread : ""}`}
                   aria-current={active ? "page" : undefined}
                 >
-                  <div className={styles.threadCardRow}>
+                  <div className={ic.threadCardRow}>
                     <div>
-                      <div className={styles.threadTitleRow}>
-                        {unread > 0 ? <span className={styles.threadUnreadDot} aria-hidden /> : null}
+                      <div className={ic.threadTitleRow}>
+                        {unread > 0 ? <span className={ic.threadUnreadDot} aria-hidden /> : null}
                         <strong>{inquiry.subject}</strong>
                       </div>
-                      <p className={styles.threadMeta}>
+                      <p className={ic.threadMeta}>
                         #{formatSupportInquiryReference(inquiry.referenceNumber)} ·{" "}
                         {SUPPORT_INQUIRY_STATUS_LABELS[inquiry.status]}
                         {inquiry.assignedToDisplayName ? ` · ${inquiry.assignedToDisplayName}` : ""}
                       </p>
                       {inquiry.lastMessagePreview ? (
-                        <p className={styles.threadPreview}>{inquiry.lastMessagePreview}</p>
+                        <p className={ic.threadPreview}>{inquiry.lastMessagePreview}</p>
                       ) : null}
                     </div>
                     <div>
-                      {timeLabel ? <span className={styles.threadTime}>{timeLabel}</span> : null}
+                      {timeLabel ? <span className={ic.threadTime}>{timeLabel}</span> : null}
                       {unread > 0 ? (
-                        <span className={styles.unreadBadge} aria-label={`${unread} חדשות`}>
+                        <span className={ic.unreadBadge} aria-label={`${unread} חדשות`}>
                           {unread > 99 ? "99+" : unread}
                         </span>
                       ) : null}

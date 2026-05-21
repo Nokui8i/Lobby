@@ -15,8 +15,8 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { adminUsersSearchUrl, consumerListingUrl } from "@/lib/consumerUrls";
 import { fetchAdminListings } from "@/lib/firebase/functions";
-import styles from "../reports/reports.module.css";
-import localStyles from "./listings.module.css";
+import { ap } from "@/lib/admin-page-classes";
+import { lp } from "@/lib/admin-page-classes";
 
 const STATUS_FILTER_OPTIONS: { id: ListingStatus | ""; label: string }[] = [
   { id: "", label: "כל הסטטוסים" },
@@ -95,32 +95,32 @@ function AdminListingsPageInner() {
   );
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
+    <div className={ap.page}>
+      <header className={ap.header}>
         <div>
-          <Link href="/" className={styles.back}>
+          <Link href="/" className={ap.back}>
             ← לוח בקרה
           </Link>
-          <h1>מודעות</h1>
-          <p className={styles.sub}>
+          <h1 className={ap.title}>מודעות</h1>
+          <p className={ap.sub}>
             {listings.length} תוצאות
             {activeCount > 0 ? ` · ${activeCount} בלוח / מוקפאות` : ""}
           </p>
         </div>
-        <button type="button" className={styles.refreshBtn} disabled={loading} onClick={() => void load()}>
+        <button type="button" className={ap.refreshBtn} disabled={loading} onClick={() => void load()}>
           רענון
         </button>
       </header>
 
       <form
-        className={styles.filters}
+        className={ap.filters}
         onSubmit={(e) => {
           e.preventDefault();
           void load();
         }}
       >
         <select
-          className={styles.select}
+          className={ap.select}
           value={filters.status}
           aria-label="סטטוס"
           onChange={(e) =>
@@ -135,7 +135,7 @@ function AdminListingsPageInner() {
         </select>
         <input
           type="search"
-          className={styles.searchInput}
+          className={ap.searchInput}
           placeholder="חיפוש כותרת, עיר, מזהה…"
           aria-label="חיפוש"
           value={filters.search}
@@ -143,7 +143,7 @@ function AdminListingsPageInner() {
         />
         <input
           type="search"
-          className={styles.searchInput}
+          className={ap.searchInput}
           placeholder="מזהה מודעה"
           aria-label="מזהה מודעה"
           value={filters.listingId}
@@ -151,46 +151,46 @@ function AdminListingsPageInner() {
         />
         <input
           type="search"
-          className={styles.searchInput}
+          className={ap.searchInput}
           placeholder="מזהה מפרסם"
           aria-label="מזהה מפרסם"
           value={filters.publisherId}
           onChange={(e) => setFilters((f) => ({ ...f, publisherId: e.target.value }))}
         />
-        <button type="submit" className={styles.refreshBtn}>
+        <button type="submit" className={ap.refreshBtn}>
           חיפוש
         </button>
       </form>
 
-      {error ? <p className={styles.error}>שגיאה בטעינה. נסו לרענן.</p> : null}
-      {loading ? <p className={styles.empty}>טוען…</p> : null}
-      {!loading && listings.length === 0 ? <p className={styles.empty}>לא נמצאו מודעות.</p> : null}
+      {error ? <p className={ap.error}>שגיאה בטעינה. נסו לרענן.</p> : null}
+      {loading ? <p className={ap.empty}>טוען…</p> : null}
+      {!loading && listings.length === 0 ? <p className={ap.empty}>לא נמצאו מודעות.</p> : null}
 
-      <ul className={styles.list}>
+      <ul className={ap.list}>
         {listings.map((listing) => {
           const countdown = countdownForRow(listing);
           return (
-            <li key={listing.id} className={styles.item}>
-              <div className={localStyles.itemRow}>
+            <li key={listing.id} className={ap.item}>
+              <div className={lp.itemRow}>
                 {listing.imageUrl ? (
-                  <img src={listing.imageUrl} alt="" className={localStyles.thumb} />
+                  <img src={listing.imageUrl} alt="" className={lp.thumb} />
                 ) : (
-                  <div className={localStyles.thumbPlaceholder} />
+                  <div className={lp.thumbPlaceholder} />
                 )}
-                <div className={localStyles.itemBody}>
-                  <div className={styles.itemTop}>
+                <div className={lp.itemBody}>
+                  <div className={ap.itemTop}>
                     <div>
-                      <h2>
+                      <h2 className="text-base font-semibold">
                         <Link href={`/listings/${listing.id}`}>{listing.title || listing.id}</Link>
                       </h2>
-                      <p className={styles.reason}>
+                      <p className={ap.reason}>
                         {listing.locationLine} · ₪{listing.priceIls.toLocaleString("he-IL")}
                       </p>
-                      <p className={styles.meta}>
-                        <span className={localStyles.statusPill}>{listing.statusLabel}</span>
-                        {countdown ? <span className={localStyles.countdown}> · {countdown}</span> : null}
+                      <p className={ap.meta}>
+                        <span className={lp.statusPill}>{listing.statusLabel}</span>
+                        {countdown ? <span className={lp.countdown}> · {countdown}</span> : null}
                       </p>
-                      <p className={styles.meta}>
+                      <p className={ap.meta}>
                         מפרסם:{" "}
                         <Link href={adminUsersSearchUrl(listing.publisherEmail || listing.publisherId)}>
                           {listing.publisherEmail || listing.publisherDisplayName || listing.publisherId}
@@ -199,27 +199,27 @@ function AdminListingsPageInner() {
                         עודכן {formatWhen(listing.updatedAt)}
                       </p>
                       {listing.moderationDraftNote ? (
-                        <p className={localStyles.modNote}>{listing.moderationDraftNote}</p>
+                        <p className={lp.modNote}>{listing.moderationDraftNote}</p>
                       ) : null}
                     </div>
                   </div>
-                  <div className={localStyles.actions}>
+                  <div className={lp.actions}>
                     {(listing.status === "active" || listing.status === "pending_review") && (
                       <Link
                         href={consumerListingUrl(listing.id)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={localStyles.linkBtn}
+                        className={lp.linkBtn}
                       >
                         באתר
                       </Link>
                     )}
                     {canEdit ? (
-                      <Link href={`/listings/${listing.id}`} className={localStyles.linkBtn}>
+                      <Link href={`/listings/${listing.id}`} className={lp.linkBtn}>
                         עריכה / טיפול
                       </Link>
                     ) : (
-                      <Link href={`/listings/${listing.id}`} className={localStyles.linkBtn}>
+                      <Link href={`/listings/${listing.id}`} className={lp.linkBtn}>
                         פרטים
                       </Link>
                     )}
@@ -236,7 +236,7 @@ function AdminListingsPageInner() {
 
 export default function AdminListingsPage() {
   return (
-    <Suspense fallback={<p className={styles.empty}>טוען…</p>}>
+    <Suspense fallback={<p className={ap.empty}>טוען…</p>}>
       <AdminListingsPageInner />
     </Suspense>
   );

@@ -1,4 +1,4 @@
-import { StatusBar } from "expo-status-bar";
+﻿import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useState } from "react";
 import { Pressable, SafeAreaView, StyleSheet, Switch, Text, View } from "react-native";
 import { fetchPushNotificationsEnabled, setPushNotificationsEnabled } from "./lib/firebase/notifications";
@@ -117,7 +117,7 @@ export function SettingsScreen({
             value={pushEnabled}
             disabled={saving}
             onValueChange={(v) => void handleToggle(v)}
-            trackColor={{ false: "#d1d5db", true: "#08b8c8" }}
+            trackColor={{ false: "#d1d5db", true: "#009de0" }}
             thumbColor="#ffffff"
           />
         </View>
@@ -149,8 +149,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#e4e5e7",
   },
-  topAction: { fontSize: 15, fontWeight: "700", color: "#101820", minWidth: 56, textAlign: "right" },
-  topTitle: { fontSize: 18, fontWeight: "800", color: "#101820" },
+  topAction: { fontSize: 15, fontWeight: "700", color: "#202125", minWidth: 56, textAlign: "right" },
+  topTitle: { fontSize: 18, fontWeight: "800", color: "#202125" },
   topSpacer: { minWidth: 56 },
   card: {
     margin: 14,
@@ -167,12 +167,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   rowText: { flex: 1 },
-  rowLabel: { textAlign: "right", fontSize: 15, fontWeight: "800", color: "#101820" },
-  rowHint: { marginTop: 4, textAlign: "right", fontSize: 13, fontWeight: "600", color: "#687076" },
-  muted: { textAlign: "center", marginTop: 24, fontSize: 15, fontWeight: "700", color: "#687076" },
+  rowLabel: { textAlign: "right", fontSize: 15, fontWeight: "800", color: "#202125" },
+  rowHint: { marginTop: 4, textAlign: "right", fontSize: 13, fontWeight: "600", color: "#64748b" },
+  muted: { textAlign: "center", marginTop: 24, fontSize: 15, fontWeight: "700", color: "#64748b" },
   primaryBtn: {
     margin: 20,
-    backgroundColor: "#101820",
+    backgroundColor: "#009DE0",
     borderRadius: 999,
     paddingVertical: 14,
     alignItems: "center",

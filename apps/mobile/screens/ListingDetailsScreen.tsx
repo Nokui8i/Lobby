@@ -1,6 +1,8 @@
 import {
   featureLabels,
+  formatListingContactPhoneDisplay,
   formatListingLocationLine,
+  normalizeListingContactPhone,
   LISTING_DESCRIPTION_MAX_CHARACTERS,
   REPORT_OTHER_DETAILS_MAX_CHARACTERS,
   type ReportReason,
@@ -9,6 +11,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -24,6 +27,8 @@ import { getFirestoreDb, ensureFirestoreAuthReady } from '../lib/firebase/client
 import { isFirebaseConfigured } from '../lib/firebase/isConfigured';
 import { submitListingReport } from '../lib/firebase/submitListingReport';
 import { useLobbyAuth } from '../lib/LobbyAuthContext';
+import { ListingBannersSection } from '../components/ListingBannersSection';
+import { ListingSidebarBannersSection } from '../components/ListingSidebarBannersSection';
 import { ListingGalleryBlock } from '../components/ListingGalleryBlock';
 import { ListingVideoBlock } from '../components/ListingVideoBlock';
 import { AppFooter } from '../components/AppFooter';
@@ -230,24 +235,41 @@ export function ListingDetails({
           <ListingVideoBlock video={resolvedListing.video} title={resolvedListing.title} />
         ) : null}
 
+        <ListingBannersSection />
+
         <View style={appStyles.detailCard}>
-          <Text style={appStyles.detailTitle}>{resolvedListing.title}</Text>
+          {resolvedListing.propertyTypeLabel?.trim() ? (
+            <View style={appStyles.detailTypePill}>
+              <Text style={appStyles.detailTypePillText}>{resolvedListing.propertyTypeLabel.trim()}</Text>
+            </View>
+          ) : null}
+          <Text style={appStyles.detailPriceHero}>
+            ₪{resolvedListing.priceIls.toLocaleString('he-IL')}
+          </Text>
+          <Text style={[appStyles.detailTitle, { marginTop: 12 }]}>{resolvedListing.title}</Text>
           <Text style={appStyles.detailLocation}>{formatListingLocationLine(resolvedListing)}</Text>
 
           <View style={appStyles.statsGrid}>
-            <Stat label="לחודש" value={`₪${resolvedListing.priceIls.toLocaleString('he-IL')}`} />
             <Stat label="חדרים" value={`${resolvedListing.rooms}`} />
             <Stat label="מ״ר" value={`${resolvedListing.sizeSqm}`} />
             <Stat label="קומה" value={`${resolvedListing.floor}/${resolvedListing.totalFloors}`} />
+            {resolvedListing.sizeSqm > 0 ? (
+              <Stat
+                label="למ״ר"
+                value={`₪${Math.round(resolvedListing.priceIls / resolvedListing.sizeSqm).toLocaleString('he-IL')}`}
+              />
+            ) : null}
           </View>
 
-          <Text style={appStyles.detailSectionTitle}>על הדירה</Text>
-          <Text
-            style={appStyles.detailDescription}
-            numberOfLines={!isDescriptionExpanded && shouldShowDescriptionToggle ? 3 : undefined}
-          >
-            {description}
-          </Text>
+          <Text style={appStyles.detailSectionTitle}>תיאור המפרסם</Text>
+          <View style={appStyles.detailDescriptionCard}>
+            <Text
+              style={appStyles.detailDescription}
+              numberOfLines={!isDescriptionExpanded && shouldShowDescriptionToggle ? 3 : undefined}
+            >
+              {description}
+            </Text>
+          </View>
           {shouldShowDescriptionToggle ? (
             <Pressable
               style={appStyles.descriptionToggle}
@@ -272,19 +294,48 @@ export function ListingDetails({
         </View>
 
         <View style={appStyles.publisherCard}>
-          <Text style={appStyles.publisherName}>{resolvedListing.publisher.displayName}</Text>
+          <View style={appStyles.publisherRow}>
+            <View style={appStyles.publisherAvatar}>
+              <Text style={appStyles.publisherAvatarText}>
+                {(resolvedListing.publisher.displayName.trim().charAt(0) || 'ל').toUpperCase()}
+              </Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={appStyles.publisherName}>{resolvedListing.publisher.displayName}</Text>
+              <Text style={appStyles.publisherSubtitle}>מפרסם/ת בלובי</Text>
+            </View>
+          </View>
+          {resolvedListing.publisher.contactPhone ? (
+            <Pressable
+              style={appStyles.phoneButton}
+              accessibilityRole="button"
+              accessibilityLabel="התקשרות למפרסם"
+              onPress={() => {
+                const tel = normalizeListingContactPhone(resolvedListing.publisher.contactPhone ?? '');
+                if (tel) {
+                  void Linking.openURL(`tel:${tel}`);
+                }
+              }}
+            >
+              <Text style={appStyles.phoneButtonText}>
+                {formatListingContactPhoneDisplay(resolvedListing.publisher.contactPhone ?? '')}
+              </Text>
+            </Pressable>
+          ) : null}
           <Pressable
             style={[appStyles.chatButton, chatBusy && appStyles.chatButtonDisabled]}
             disabled={chatBusy}
             onPress={() => void handleStartChat()}
           >
-            <Text style={appStyles.chatButtonText}>{chatBusy ? 'פותחים…' : 'שליחת הודעה בצ׳אט'}</Text>
+            <Text style={appStyles.chatButtonText}>{chatBusy ? 'פותחים…' : 'שליחת הודעה למפרסם'}</Text>
           </Pressable>
           {chatHint ? <Text style={appStyles.chatHintText}>{chatHint}</Text> : null}
-          <Pressable style={appStyles.phoneButton}>
-            <Text style={appStyles.phoneButtonText}>הצגת פרטי התקשרות</Text>
-          </Pressable>
+          <Text style={[appStyles.publisherSubtitle, { marginTop: 12 }]}>
+            ראיתם דרישת עמלה? דווחו מהמודעה — הצוות יטפל.
+          </Text>
         </View>
+
+        <ListingSidebarBannersSection />
 
         <AppFooter />
       </ScrollView>
@@ -423,10 +474,10 @@ function BackArrowIcon() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <View style={appStyles.statBox}>
+      <Text style={appStyles.statValue}>{value}</Text>
       <View style={appStyles.statLabelRow}>
         <Text style={appStyles.statLabel}>{label}</Text>
       </View>
-      <Text style={appStyles.statValue}>{value}</Text>
     </View>
   );
 }

@@ -1,4 +1,4 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
+﻿import Ionicons from "@expo/vector-icons/Ionicons";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { SAVED_LISTINGS_LOGIN_HE } from "@lobby/shared";
@@ -51,7 +51,7 @@ export function SaveListingButton({
   }
 
   const iconName = saved ? "heart" : "heart-outline";
-  const iconColor = saved ? "#e11d48" : "#687076";
+  const iconColor = saved ? "#FF4D6D" : "#202125";
 
   return (
     <Pressable
@@ -69,7 +69,7 @@ export function SaveListingButton({
         style,
       ]}
     >
-      <Ionicons name={iconName} size={variant === "gallery" ? 20 : 22} color={iconColor} />
+      <Ionicons name={iconName} size={variant === "gallery" ? 20 : 18} color={iconColor} />
       {variant === "gallery" ? <Text style={styles.galleryLabel}>{saved ? "נשמר" : "שמירה"}</Text> : null}
     </Pressable>
   );
@@ -77,13 +77,13 @@ export function SaveListingButton({
 
 const styles = StyleSheet.create({
   cardBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.94)",
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.92)",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#101820",
+    shadowColor: "#202125",
     shadowOpacity: 0.12,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     backgroundColor: "rgba(255,255,255,0.92)",
-    shadowColor: "#101820",
+    shadowColor: "#202125",
     shadowOpacity: 0.14,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 6 },

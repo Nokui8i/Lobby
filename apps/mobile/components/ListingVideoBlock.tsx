@@ -40,17 +40,17 @@ const styles = StyleSheet.create({
   badge: {
     fontSize: 15,
     fontWeight: "900",
-    color: "#101820",
+    color: "#202125",
   },
   duration: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#687076",
+    color: "#64748b",
   },
   frame: {
     borderRadius: 20,
     overflow: "hidden",
-    backgroundColor: "#101820",
+    backgroundColor: "#009DE0",
     borderWidth: 1,
     borderColor: "rgba(16,24,32,0.08)",
   },

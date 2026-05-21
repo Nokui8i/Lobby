@@ -1,3 +1,5 @@
+import { normalizeListingContactPhone } from "./listingContactPhone";
+import { publishRoomOptionIdFromRooms } from "./feedFilters";
 import type { PropertyFeature, RentalListing } from "./types";
 
 export function parseListingEntryForForm(entryDate: string): {
@@ -21,6 +23,7 @@ export function parseListingEntryForForm(entryDate: string): {
 
 export interface ListingPublishFormSeed {
   title: string;
+  contactPhone: string;
   city: string;
   neighborhood: string;
   streetLine: string;
@@ -28,7 +31,7 @@ export interface ListingPublishFormSeed {
   propertyTypeId: string;
   propertyConditionId: string;
   priceIls: string;
-  rooms: string;
+  roomsOptionId: string;
   sizeSqm: string;
   floor: string;
   totalFloors: string;
@@ -45,6 +48,7 @@ export function rentalListingToPublishFormSeed(listing: RentalListing): ListingP
 
   return {
     title: listing.title,
+    contactPhone: normalizeListingContactPhone(listing.publisher.contactPhone ?? ""),
     city: listing.city,
     neighborhood: listing.neighborhood,
     streetLine: listing.streetLine?.trim() || listing.streetHint.trim(),
@@ -52,7 +56,7 @@ export function rentalListingToPublishFormSeed(listing: RentalListing): ListingP
     propertyTypeId: listing.propertyTypeId ?? "",
     propertyConditionId: listing.propertyConditionId ?? "",
     priceIls: String(listing.priceIls),
-    rooms: String(listing.rooms),
+    roomsOptionId: publishRoomOptionIdFromRooms(listing.rooms),
     sizeSqm: String(listing.sizeSqm),
     floor: String(listing.floor),
     totalFloors: String(listing.totalFloors),

@@ -6,9 +6,13 @@ const monorepoRoot = path.resolve(__dirname, "../..");
 const nextConfig: NextConfig = {
   outputFileTracingRoot: monorepoRoot,
   transpilePackages: ["@lobby/shared"],
-  /** Next 16 defaults to Turbopack; we use webpack in dev/build scripts. */
-  turbopack: {},
-  webpack: (config, { dev }) => {
+  turbopack: {
+    resolveAlias: {
+      "@lobby/shared": "../../packages/shared/src/index.ts",
+      "@swc/helpers": "../../node_modules/@swc/helpers",
+    },
+  },
+  webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
       "@lobby/shared": path.resolve(monorepoRoot, "packages/shared/src/index.ts"),
@@ -19,12 +23,6 @@ const nextConfig: NextConfig = {
       path.resolve(monorepoRoot, "node_modules"),
       ...(Array.isArray(config.resolve.modules) ? config.resolve.modules : ["node_modules"]),
     ];
-    if (dev) {
-      config.watchOptions = {
-        ...config.watchOptions,
-        aggregateTimeout: 400,
-      };
-    }
     return config;
   },
 };

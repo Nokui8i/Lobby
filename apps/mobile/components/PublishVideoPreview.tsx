@@ -1,4 +1,4 @@
-import { useVideoPlayer, VideoView } from "expo-video";
+﻿import { useVideoPlayer, VideoView } from "expo-video";
 import { StyleSheet, View } from "react-native";
 
 export function PublishVideoPreview({ sourceUri }: { sourceUri: string }) {
@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
     width: "100%",
     borderRadius: 16,
     overflow: "hidden",
-    backgroundColor: "#101820",
+    backgroundColor: "#202125",
     borderWidth: 1,
     borderColor: "rgba(16,24,32,0.1)",
     marginBottom: 8,

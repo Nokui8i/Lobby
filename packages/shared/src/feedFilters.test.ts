@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   EMPTY_FEED_SEARCH_FILTERS,
   listingMatchesFeedSearchFilters,
+  publishRoomOptionIdFromRooms,
+  publishRoomsFromOptionId,
   sortFeedListings,
 } from "./feedFilters";
 import type { RentalListing } from "./types";
@@ -61,5 +63,14 @@ describe("sortFeedListings", () => {
       "price_desc",
     );
     expect(sorted.map((l) => l.id)).toEqual(["b", "a"]);
+  });
+});
+
+describe("publish room options", () => {
+  it("round-trips standard filter values", () => {
+    expect(publishRoomsFromOptionId("2.5")).toBe(2.5);
+    expect(publishRoomOptionIdFromRooms(2.5)).toBe("2.5");
+    expect(publishRoomsFromOptionId("5+")).toBe(5);
+    expect(publishRoomOptionIdFromRooms(5)).toBe("5+");
   });
 });

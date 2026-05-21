@@ -1,16 +1,13 @@
 import type { LocationKind, LocationSuggestion } from "./location";
 import { LOCATION_KIND_SECTION_HE } from "./location";
 
-/** סדר קבוצות בתפריט ההשלמה (כמו יד2: עיר → שכונה → רחוב) */
+/** סדר קבוצות בתפריט ההשלמה בפיד: רחוב → שכונה → עיר → אזור */
 export const LOCATION_SUGGESTION_KIND_ORDER: LocationKind[] = [
+  "street",
+  "neighborhood",
   "city",
   "area",
-  "neighborhood",
-  "street",
 ];
-
-export const LOCATION_STREET_SECTION_NOTICE_HE =
-  "בחירה ברחוב מציגה מודעות ברחוב בלבד — לא ניתן לשלב עם מיקום נוסף.";
 
 function secondaryParts(item: LocationSuggestion): string[] {
   return item.secondaryText

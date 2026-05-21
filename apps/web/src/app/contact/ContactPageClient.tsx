@@ -9,17 +9,20 @@ import {
   type SupportInquiryCategory,
 } from "@lobby/shared";
 import { useRouter, useSearchParams } from "next/navigation";
+import { bubble } from "@/components/bubble/styles";
 import { useLobbyAuth } from "@/contexts/LobbyAuthContext";
 import { fetchListingByIdFromFirestore } from "@/lib/firebase/listingQueries";
 import { isFirebaseConfigured } from "@/lib/firebase/isConfigured";
 import { buildSupportChatRouteId } from "@lobby/shared";
 import { submitSupportInquiry } from "@/lib/firebase/supportInquiry";
-import styles from "./contact.module.css";
+import { cn } from "@/lib/utils";
 
 const categoryOptions = SUPPORT_INQUIRY_CATEGORIES.map((id) => ({
   id,
   label: SUPPORT_INQUIRY_CATEGORY_LABELS[id],
 }));
+
+const fieldClass = "flex flex-col gap-1.5";
 
 export function ContactPageClient() {
   const router = useRouter();
@@ -91,9 +94,9 @@ export function ContactPageClient() {
 
   if (!user) {
     return (
-      <div className={styles.authPrompt}>
-        <p>כדי לשלוח פנייה לתמיכה יש להתחבר לחשבון Lobby.</p>
-        <button type="button" className={styles.authBtn} onClick={openAuthModal}>
+      <div className="rounded-2xl bg-black/[0.04] px-4 py-4">
+        <p className="m-0 text-graphite">כדי לשלוח פנייה לתמיכה יש להתחבר לחשבון Lobby.</p>
+        <button type="button" className={cn(bubble.btnPrimary, "mt-2.5")} onClick={openAuthModal}>
           התחברות / הרשמה
         </button>
       </div>
@@ -101,16 +104,17 @@ export function ContactPageClient() {
   }
 
   return (
-    <form className={styles.form} autoComplete="off" onSubmit={(e) => void handleSubmit(e)}>
-      {listingTitle ? (
-        <p className={styles.hint}>הפנייה תקושר למודעה: {listingTitle}</p>
-      ) : null}
+    <form className="mt-2 flex flex-col gap-4" autoComplete="off" onSubmit={(e) => void handleSubmit(e)}>
+      {listingTitle ? <p className="m-0 text-sm text-graphite/50">הפנייה תקושר למודעה: {listingTitle}</p> : null}
 
-      <div className={styles.field}>
-        <label htmlFor="inquiry-category">קטגוריה</label>
+      <div className={fieldClass}>
+        <label htmlFor="inquiry-category" className={bubble.label}>
+          קטגוריה
+        </label>
         <select
           id="inquiry-category"
           name="lobby-inquiry-category"
+          className={bubble.input}
           autoComplete="off"
           value={category}
           onChange={(e) => setCategory(e.target.value as SupportInquiryCategory)}
@@ -123,12 +127,15 @@ export function ContactPageClient() {
         </select>
       </div>
 
-      <div className={styles.field}>
-        <label htmlFor="inquiry-subject">נושא</label>
+      <div className={fieldClass}>
+        <label htmlFor="inquiry-subject" className={bubble.label}>
+          נושא
+        </label>
         <input
           id="inquiry-subject"
           name="lobby-inquiry-subject"
           type="text"
+          className={bubble.input}
           autoComplete="off"
           data-lpignore="true"
           data-1p-ignore
@@ -139,11 +146,14 @@ export function ContactPageClient() {
         />
       </div>
 
-      <div className={styles.field}>
-        <label htmlFor="inquiry-body">פרטים</label>
+      <div className={fieldClass}>
+        <label htmlFor="inquiry-body" className={bubble.label}>
+          פרטים
+        </label>
         <textarea
           id="inquiry-body"
           name="lobby-inquiry-body"
+          className={cn(bubble.input, "min-h-[140px] resize-y")}
           autoComplete="off"
           data-lpignore="true"
           data-1p-ignore
@@ -152,17 +162,17 @@ export function ContactPageClient() {
           onChange={(e) => setBody(e.target.value)}
           required
         />
-        <p className={styles.hint}>מינימום 10 תווים</p>
+        <p className="m-0 text-[13px] text-graphite/50">מינימום 10 תווים</p>
       </div>
 
       {error ? (
-        <p className={styles.error} role="alert">
+        <p className="rounded-[14px] bg-red-500/10 px-3.5 py-3 text-sm font-bold text-[#b42318]" role="alert">
           {error}
         </p>
       ) : null}
 
-      <div className={styles.actions}>
-        <button type="submit" className={styles.submitBtn} disabled={!canSubmit}>
+      <div>
+        <button type="submit" className={bubble.btnPrimary} disabled={!canSubmit}>
           {submitting ? "שולח…" : "שליחת פנייה"}
         </button>
       </div>

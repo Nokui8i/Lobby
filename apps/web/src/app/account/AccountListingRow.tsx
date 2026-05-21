@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -27,22 +27,45 @@ import {
   renewOwnerListing,
   unfreezeOwnerListing,
 } from "@/lib/firebase/listingOwnerMutations";
-import styles from "./account.module.css";
+import { cn } from "@/lib/utils";
+
+const acc = {
+  row: "bubble-card relative flex flex-col gap-3 p-3 transition hover:-translate-y-0.5 md:flex-row md:items-center",
+  rowMain: "grid min-w-0 flex-1 grid-cols-[112px_minmax(0,1fr)] items-center gap-3 text-inherit no-underline",
+  rowMenuWrap: "relative flex shrink-0 items-center justify-end gap-2 md:ps-2",
+  menuBtn: "flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-0 bg-soft text-graphite/50 hover:text-brand disabled:cursor-wait disabled:opacity-50",
+  menuDots: "text-xl font-black leading-none tracking-tight",
+  menuPanel: "absolute top-[calc(100%+4px)] start-0 z-20 min-w-[200px] rounded-2xl border border-graphite/5 bg-white p-1.5 shadow-bubble",
+  menuItem: "block w-full cursor-pointer rounded-xl border-0 bg-transparent px-3 py-2.5 text-right text-sm font-semibold text-graphite hover:bg-brand/10",
+  menuItemDanger: "!text-red-700 hover:!bg-red-500/10",
+  thumb: "relative h-20 w-28 overflow-hidden rounded-lg bg-soft [&_img]:h-full [&_img]:w-full [&_img]:object-cover",
+  body: "min-w-0 text-right",
+  rowTitle: "truncate text-sm font-semibold text-graphite",
+  rowMeta: "mt-0.5 text-xs text-graphite/50",
+  statusPill: "inline-block rounded-full bg-soft px-2.5 py-0.5 text-[11px] font-semibold text-graphite/70",
+  statusPillActive: "!bg-emerald-50 !text-emerald-700",
+  statusPillFrozen: "!bg-indigo-500/15 !text-indigo-800",
+  statusPillDraft: "!bg-amber-500/15 !text-amber-900",
+  statusPillOff: "!bg-gray-500/10 !text-gray-700",
+  countdown: "mt-2 text-right text-[13px] font-bold text-brand",
+  countdownUrgent: "!text-red-700",
+  moderationNote: "mt-2 rounded-[10px] bg-amber-500/10 px-2.5 py-2 text-right text-xs font-semibold leading-snug text-amber-900",
+} as const;
 
 function statusPillClass(status: ListingStatus): string {
   if (status === "active") {
-    return `${styles.statusPill} ${styles.statusPillActive}`;
+    return `${acc.statusPill} ${acc.statusPillActive}`;
   }
   if (status === "frozen") {
-    return `${styles.statusPill} ${styles.statusPillFrozen}`;
+    return `${acc.statusPill} ${acc.statusPillFrozen}`;
   }
   if (status === "draft") {
-    return `${styles.statusPill} ${styles.statusPillDraft}`;
+    return `${acc.statusPill} ${acc.statusPillDraft}`;
   }
   if (status === "pending_review") {
-    return `${styles.statusPill} ${styles.statusPillDraft}`;
+    return `${acc.statusPill} ${acc.statusPillDraft}`;
   }
-  return `${styles.statusPill} ${styles.statusPillOff}`;
+  return `${acc.statusPill} ${acc.statusPillOff}`;
 }
 
 type PendingDialog =
@@ -224,35 +247,35 @@ export function AccountListingRow({
 
   return (
     <>
-      <div ref={rowRef} className={styles.row}>
-        <Link href={rowHref} className={styles.rowMain}>
-          <div className={styles.thumb}>
+      <div ref={rowRef} className={acc.row}>
+        <Link href={rowHref} className={acc.rowMain}>
+          <div className={acc.thumb}>
             <Image src={listing.imageUrl} alt="" width={176} height={144} />
           </div>
-          <div className={styles.body}>
-            <div className={styles.rowTitle}>{listing.title}</div>
-            <div className={styles.rowMeta}>
+          <div className={acc.body}>
+            <div className={acc.rowTitle}>{listing.title}</div>
+            <div className={acc.rowMeta}>
               ₪{listing.priceIls.toLocaleString("he-IL")} · {formatListingLocationLine(listing)}
             </div>
             <span className={statusPillClass(listing.status)}>{LISTING_STATUS_LABEL_HE[listing.status]}</span>
             {publishCountdown ? (
               <p
-                className={`${styles.countdown} ${publishCountdownUrgent ? styles.countdownUrgent : ""}`}
+                className={`${acc.countdown} ${publishCountdownUrgent ? acc.countdownUrgent : ""}`}
                 role="status"
               >
                 {publishCountdown}
               </p>
             ) : null}
             {listing.status === "draft" && listing.moderationDraftNote?.trim() ? (
-              <p className={styles.moderationNote}>{listing.moderationDraftNote.trim()}</p>
+              <p className={acc.moderationNote}>{listing.moderationDraftNote.trim()}</p>
             ) : null}
           </div>
         </Link>
 
-        <div className={styles.rowMenuWrap}>
+        <div className={acc.rowMenuWrap}>
           <button
             type="button"
-            className={styles.menuBtn}
+            className={acc.menuBtn}
             aria-label="פעולות על המודעה"
             aria-haspopup="menu"
             aria-expanded={menuOpen}
@@ -264,12 +287,12 @@ export function AccountListingRow({
               setMenuOpen((v) => !v);
             }}
           >
-            <span className={styles.menuDots} aria-hidden>
+            <span className={acc.menuDots} aria-hidden>
               ⋮
             </span>
           </button>
           {menuOpen ? (
-            <div id={menuId} className={styles.menuPanel} role="menu">
+            <div id={menuId} className={acc.menuPanel} role="menu">
               {actions.map((action) => (
                 <button
                   key={action}
@@ -277,8 +300,8 @@ export function AccountListingRow({
                   role="menuitem"
                   className={
                     listingOwnerActionIsDestructive(action)
-                      ? `${styles.menuItem} ${styles.menuItemDanger}`
-                      : styles.menuItem
+                      ? `${acc.menuItem} ${acc.menuItemDanger}`
+                      : acc.menuItem
                   }
                   disabled={busy}
                   onClick={(e) => {

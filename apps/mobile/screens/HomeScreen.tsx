@@ -8,7 +8,6 @@ import {
   type RentalListing,
 } from '@lobby/shared';
 import {
-  ImageBackground,
   Modal,
   NativeScrollEvent,
   Pressable,
@@ -18,12 +17,11 @@ import {
   View,
 } from 'react-native';
 import { FeedSearchPanel } from '../FeedSearchPanel';
-import { lobbyBanners } from '../constants/homeFeed';
 import { AppFooter } from '../components/AppFooter';
-import { FilterIcon } from '../components/FilterIcon';
+import { HomeFeedHero } from '../components/HomeFeedHero';
 import { ListingCard } from '../components/ListingCard';
+import { LobbyHomeHeader } from '../components/LobbyHomeHeader';
 import { FloatingMainTabBar } from '../components/MainTabBar';
-import { SavedListingsHeaderButton } from '../components/SavedListingsHeaderButton';
 import type { FeedListing, MainTab } from '../navigation/types';
 import { isFirebaseConfigured } from '../lib/firebase/isConfigured';
 import { appStyles } from '../styles/appStyles';
@@ -40,12 +38,9 @@ export function HomeScreen({
   appliedFeedFilters,
   appliedFeedSort,
   feedFilterSummary,
-  activeBannerIndex,
   mainTab,
   messagesBadgeCount,
   filterModalVisible,
-  bannerWidth,
-  bannerScrollRef,
   feedScrollRef,
   openAuthModal,
   requestSignOut,
@@ -55,12 +50,12 @@ export function HomeScreen({
   onOpenSaved,
   onOpenAccount,
   onMainTabPress,
-  onBannerScroll,
   onFeedScroll,
   onAppliedFeedSortChange,
   onOpenFilterModal,
   onCloseFilterModal,
   onApplyFeedSearch,
+  onOpenPublish,
 }: {
   user: { uid: string } | null;
   authLoading: boolean;
@@ -72,12 +67,9 @@ export function HomeScreen({
   appliedFeedFilters: FeedSearchFilters;
   appliedFeedSort: FeedSortId;
   feedFilterSummary: string;
-  activeBannerIndex: number;
   mainTab: MainTab;
   messagesBadgeCount: number;
   filterModalVisible: boolean;
-  bannerWidth: number;
-  bannerScrollRef: RefObject<ScrollView | null>;
   feedScrollRef: RefObject<ScrollView | null>;
   openAuthModal: () => void;
   requestSignOut: () => void;
@@ -87,13 +79,15 @@ export function HomeScreen({
   onOpenSaved: () => void;
   onOpenAccount: () => void;
   onMainTabPress: (tab: MainTab) => void;
-  onBannerScroll: (event: { nativeEvent: NativeScrollEvent }) => void;
   onFeedScroll: (event: { nativeEvent: NativeScrollEvent }) => void;
   onAppliedFeedSortChange: (sort: FeedSortId) => void;
   onOpenFilterModal: () => void;
   onCloseFilterModal: () => void;
   onApplyFeedSearch: (filters: FeedSearchFilters) => void;
+  onOpenPublish: () => void;
 }) {
+  const filtersActive = feedSearchFiltersIsActive(appliedFeedFilters);
+
   return (
     <SafeAreaView style={appStyles.safeArea}>
       <StatusBar style="dark" />
@@ -106,38 +100,16 @@ export function HomeScreen({
           />
         ) : (
           <>
-            <View style={appStyles.headerMainSimple}>
-              <View style={appStyles.headerSideSlot}>
-                {!isFirebaseConfigured() ? (
-                  <Text style={appStyles.headerMuted}>ללא שרת</Text>
-                ) : authLoading ? (
-                  <Text style={appStyles.headerMuted}>…</Text>
-                ) : user ? (
-                  <Pressable accessibilityRole="button" accessibilityLabel="יציאה" onPress={requestSignOut}>
-                    <Text style={appStyles.headerTextButton}>יציאה</Text>
-                  </Pressable>
-                ) : null}
-              </View>
-              <Text style={appStyles.brandLogoText}>LOBBY</Text>
-              <View style={[appStyles.headerSideSlot, appStyles.headerSideSlotEnd]}>
-                {isFirebaseConfigured() ? (
-                  <SavedListingsHeaderButton onPress={onOpenSaved} />
-                ) : null}
-                {!authLoading && user && isFirebaseConfigured() ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="אזור אישי"
-                    onPress={onOpenAccount}
-                  >
-                    <Text style={appStyles.headerTextButton}>אזור אישי</Text>
-                  </Pressable>
-                ) : !authLoading && !user && isFirebaseConfigured() ? (
-                  <Pressable accessibilityRole="button" accessibilityLabel="כניסה" onPress={openAuthModal}>
-                    <Text style={appStyles.headerTextButton}>כניסה</Text>
-                  </Pressable>
-                ) : null}
-              </View>
-            </View>
+            <LobbyHomeHeader
+              showServerHint={!isFirebaseConfigured()}
+              authLoading={authLoading}
+              user={user}
+              showSaved={isFirebaseConfigured()}
+              onSignOut={requestSignOut}
+              onSignIn={openAuthModal}
+              onAccount={onOpenAccount}
+              onSaved={onOpenSaved}
+            />
 
             <ScrollView
               ref={feedScrollRef}
@@ -149,79 +121,13 @@ export function HomeScreen({
               onScroll={onFeedScroll}
               scrollEventThrottle={16}
             >
-              <ScrollView
-                ref={bannerScrollRef}
-                horizontal
-                bounces={false}
-                alwaysBounceHorizontal={false}
-                overScrollMode="never"
-                pagingEnabled
-                decelerationRate="fast"
-                snapToInterval={bannerWidth}
-                snapToAlignment="start"
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={appStyles.bannerCarousel}
-                onScroll={onBannerScroll}
-                scrollEventThrottle={16}
-              >
-                {lobbyBanners.map((banner) => (
-                  <ImageBackground
-                    key={banner.id}
-                    source={{ uri: banner.imageUrl }}
-                    imageStyle={appStyles.bannerBackgroundImage}
-                    style={[appStyles.bannerCard, { width: bannerWidth }]}
-                  />
-                ))}
-              </ScrollView>
+              <HomeFeedHero
+                searchSummary={feedFilterSummary}
+                hasActiveFilters={filtersActive}
+                onOpenSearch={onOpenFilterModal}
+              />
 
-              <View style={appStyles.bannerIndicators}>
-                {lobbyBanners.map((banner, index) => (
-                  <View
-                    key={banner.id}
-                    style={[
-                      appStyles.bannerIndicator,
-                      index === activeBannerIndex && appStyles.bannerIndicatorActive,
-                    ]}
-                  />
-                ))}
-              </View>
-
-              <View style={appStyles.filterPanel}>
-                <Pressable
-                  style={appStyles.filterSearchRow}
-                  accessibilityRole="button"
-                  accessibilityLabel="חיפוש לפי מיקום"
-                  onPress={onOpenFilterModal}
-                >
-                  <View style={appStyles.filterSearchTextWrap}>
-                    <Text style={appStyles.filterSearchLabel}>איפה מחפשים?</Text>
-                    <Text style={appStyles.filterSearchValue} numberOfLines={2}>
-                      {feedSearchFiltersIsActive(appliedFeedFilters)
-                        ? feedFilterSummary || 'סינון פעיל'
-                        : 'עיר או רחוב'}
-                    </Text>
-                    {feedSearchFiltersIsActive(appliedFeedFilters) ? (
-                      <Text style={appStyles.filterSearchHint}>לחצו לעריכה · חיפוש מחדש</Text>
-                    ) : null}
-                  </View>
-                  <Text style={appStyles.filterSearchIcon}>⌕</Text>
-                </Pressable>
-
-                <Pressable
-                  style={appStyles.filterMoreButton}
-                  accessibilityRole="button"
-                  accessibilityLabel="חיפוש וסינון"
-                  onPress={onOpenFilterModal}
-                >
-                  <Text style={appStyles.filterMoreText}>
-                    {feedSearchFiltersIsActive(appliedFeedFilters) ? 'עריכת סינון' : 'סינון'}
-                  </Text>
-                  <FilterIcon />
-                </Pressable>
-              </View>
-
-              <View style={appStyles.sectionHeader}>
-                <Text style={appStyles.sectionTitle}>דירות להשכרה</Text>
+              <View style={appStyles.feedToolbarBlock}>
                 <View style={appStyles.feedSortRow}>
                   {FEED_SORT_OPTIONS.map((opt) => (
                     <Pressable
@@ -242,6 +148,7 @@ export function HomeScreen({
                     </Pressable>
                   ))}
                 </View>
+                <Text style={appStyles.sectionTitle}>דירות להשכרה</Text>
               </View>
 
               {feedLoading && feedListings.length === 0 ? (
@@ -264,7 +171,7 @@ export function HomeScreen({
 
               {!feedLoading && !feedError && isFirebaseConfigured() && feedListings.length === 0 ? (
                 <Text style={appStyles.feedLoadingText} accessibilityRole="text">
-                  {feedSearchFiltersIsActive(appliedFeedFilters)
+                  {filtersActive
                     ? feedFilterSummary
                       ? `אין כרגע מודעות פעילות ב${feedFilterSummary} לפי הסינון. נסו אזור רחב יותר או פחות מסננים.`
                       : 'אין מודעות שעונות על הסינון. נסו לשנות מחיר, חדרים, מאפיינים או מיקום.'

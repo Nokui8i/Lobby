@@ -7,10 +7,18 @@ import {
   createOptimisticMessageId,
   formatChatMessageTime,
   formatLobbySendError,
-  isComposerSendKey,
   logLobbyError,
   supportInquiryIsOpen,
 } from "@lobby/shared";
+import {
+  ChatComposer,
+  ChatGate,
+  ChatMessageArea,
+  ChatMessageBubble,
+  ChatPanelShell,
+  ChatThreadHeader,
+} from "@/components/messaging/chat-ui";
+import { Button } from "@/components/ui/button";
 import { useLobbyAuth } from "@/contexts/LobbyAuthContext";
 import {
   markSupportInquiryRead,
@@ -28,7 +36,7 @@ import {
 import { getFirestoreDb, ensureFirestoreAuthReady } from "@/lib/firebase/client";
 import { isFirebaseConfigured } from "@/lib/firebase/isConfigured";
 import { mergeServerMessagesWithPending, pruneAcknowledgedPending } from "@/lib/mergePendingMessages";
-import styles from "../chat/chat.module.css";
+import { scrollThreadToBottom } from "@/lib/messaging/scrollThreadToBottom";
 
 interface SupportThreadClientProps {
   inquiryId: string;
@@ -123,7 +131,7 @@ export function SupportThreadClient({ inquiryId }: SupportThreadClientProps) {
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     const nearBottom = distanceFromBottom < 160;
     if (nearBottom || last?.senderRole === "user") {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      scrollThreadToBottom(el, messagesEndRef.current, "smooth");
     }
   }, [displayMessages]);
 
@@ -178,135 +186,81 @@ export function SupportThreadClient({ inquiryId }: SupportThreadClientProps) {
     }
   }
 
-  if (!isFirebaseConfigured()) {
+  if (inquiry === undefined && user && isFirebaseConfigured()) {
     return (
-      <div className={`${styles.threadShell} ${styles.threadShellSimple}`} role="region" aria-label="פנייה">
-        <p className={styles.muted}>אין חיבור ל־Firebase.</p>
-        <Link href="/chat" className={styles.backLink}>
-          לרשימה
-        </Link>
-      </div>
+      <ChatPanelShell className="items-center justify-center" role="region" aria-label="פנייה">
+        <p className="text-muted-foreground text-sm">טוען פנייה…</p>
+      </ChatPanelShell>
     );
   }
 
-  if (loading) {
+  if (inquiry === null && user && isFirebaseConfigured()) {
     return (
-      <div className={`${styles.threadShell} ${styles.threadShellSimple}`} role="region" aria-label="פנייה">
-        <p className={styles.muted}>טוען…</p>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className={`${styles.threadShell} ${styles.threadShellSimple}`} role="region" aria-label="פנייה">
-        <p className={styles.threadShellSimpleText}>התחברו כדי לצפות בפנייה.</p>
-        <button type="button" className={styles.ctaButton} onClick={openAuthModal}>
-          כניסה
-        </button>
-      </div>
-    );
-  }
-
-  if (inquiry === undefined) {
-    return (
-      <div className={`${styles.threadShell} ${styles.threadShellSimple}`} role="region" aria-label="פנייה">
-        <p className={styles.muted}>טוען פנייה…</p>
-      </div>
-    );
-  }
-
-  if (inquiry === null) {
-    return (
-      <div className={`${styles.threadShell} ${styles.threadShellSimple}`} role="region" aria-label="פנייה">
-        <p>אין גישה לפנייה הזאת.</p>
-        <Link href="/chat" className={styles.backLink}>
-          חזרה להודעות
-        </Link>
-      </div>
+      <ChatPanelShell className="items-center justify-center gap-3 p-8 text-center" role="region" aria-label="פנייה">
+        <p className="text-sm">אין גישה לפנייה הזאת.</p>
+        <Button variant="outline" asChild>
+          <Link href="/chat">חזרה להודעות</Link>
+        </Button>
+      </ChatPanelShell>
     );
   }
 
   return (
-    <div className={styles.threadShell} role="region" aria-label="פנייה לתמיכה">
-      <div className={styles.threadToolbar}>
-        <Link href="/chat" className={styles.backLink}>
-          לרשימה
-        </Link>
-        <h1>תמיכה</h1>
-        {isOpen && !inquiry.userResolvedAt ? (
-          <button
-            type="button"
-            className={styles.backLink}
-            disabled={closing}
-            onClick={() => void handleMarkResolved()}
-          >
-            {closing ? "שומר…" : "הבעיה נפתרה"}
-          </button>
-        ) : null}
-      </div>
+    <ChatGate
+      firebaseMissing={!isFirebaseConfigured()}
+      loading={loading}
+      needsAuth={!user}
+      onAuth={openAuthModal}
+      message="התחברו כדי לצפות בפנייה."
+    >
+      {inquiry ? (
+        <ChatPanelShell role="region" aria-label="פנייה לתמיכה">
+          <ChatThreadHeader
+            backHref="/chat"
+            title={inquiry.subject || "תמיכה"}
+            subtitle="פנייה לצוות Lobby"
+            actions={
+              isOpen && !inquiry.userResolvedAt ? (
+                <Button variant="outline" size="sm" disabled={closing} onClick={() => void handleMarkResolved()}>
+                  {closing ? "שומר…" : "הבעיה נפתרה"}
+                </Button>
+              ) : null
+            }
+          />
 
-      <div ref={messagesScrollRef} className={styles.messagesScroll}>
-        <div className={styles.messagesInner}>
-          <SupportInquirySystemMessages inquiry={inquiry} />
-          {displayMessages.map((message) => {
-            const mine = message.senderRole === "user";
-            const timeLabel = formatChatMessageTime(message.createdAt);
-            return (
-              <div
-                key={message.id}
-                className={`${styles.bubbleWrap} ${mine ? styles.bubbleWrapMine : styles.bubbleWrapOther}`}
-              >
-                <div className={`${styles.bubble} ${mine ? styles.bubbleMine : styles.bubbleOther}`}>
+          <ChatMessageArea scrollRef={messagesScrollRef}>
+            <SupportInquirySystemMessages inquiry={inquiry} />
+            {displayMessages.map((message) => {
+              const mine = message.senderRole === "user";
+              const timeLabel = formatChatMessageTime(message.createdAt);
+              return (
+                <ChatMessageBubble key={message.id} mine={mine} timeLabel={timeLabel || undefined}>
                   {message.text}
-                </div>
-                {timeLabel ? <span className={styles.bubbleTime}>{timeLabel}</span> : null}
-              </div>
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
+                </ChatMessageBubble>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </ChatMessageArea>
 
-      {isOpen ? (
-        <div className={styles.composerSticky}>
-          {sendError ? <p className={styles.sendError}>{sendError}</p> : null}
-          <div className={styles.composer}>
-            <textarea
+          {isOpen ? (
+            <ChatComposer
               value={draft}
+              onChange={setDraft}
+              onSend={() => void handleSend()}
+              sending={sending}
               maxLength={SUPPORT_INQUIRY_MESSAGE_MAX}
-              placeholder="כתבו הודעה…"
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.nativeEvent.isComposing) {
-                  return;
-                }
-                if (isComposerSendKey(event.key, event.shiftKey)) {
-                  event.preventDefault();
-                  void handleSend();
-                }
-              }}
-              rows={2}
-              dir="rtl"
+              error={sendError}
             />
-            <button
-              type="button"
-              className={styles.send}
-              disabled={sending || !draft.trim()}
-              onClick={() => void handleSend()}
-            >
-              שליחה
-            </button>
-          </div>
-        </div>
-      ) : (
-        <p className={`${styles.muted} ${styles.listStatusPad}`}>
-          הפנייה סגורה.{" "}
-          <Link href="/contact" className={styles.backLink}>
-            פנייה חדשה
-          </Link>
-        </p>
-      )}
-    </div>
+          ) : (
+            <footer className="border-border bg-card text-muted-foreground shrink-0 border-t p-4 text-center text-sm">
+              הפנייה סגורה.{" "}
+              <Link href="/contact" className="text-primary font-medium hover:underline">
+                פנייה חדשה
+              </Link>
+            </footer>
+          )}
+        </ChatPanelShell>
+      ) : null}
+    </ChatGate>
   );
 }

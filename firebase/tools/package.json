@@ -4,7 +4,6 @@
   "type": "module",
   "scripts": {
     "seed:dev-listing": "node scripts/seedDevListingForEmail.mjs",
-    "seed:admin-demo": "node scripts/seedAdminDemo.mjs",
     "delete:dev-listing": "node scripts/deleteDevListing.mjs",
     "set-staff-claim": "node scripts/setStaffClaim.mjs"
   },

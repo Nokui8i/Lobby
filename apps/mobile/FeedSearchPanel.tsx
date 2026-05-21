@@ -15,7 +15,11 @@ import {
   type FeedSearchFilters,
   type FeedSortId,
 } from "@lobby/shared";
+import { lobbyDesign } from "@lobby/shared";
 import { LocationSearchInput } from "./LocationSearchInput";
+
+const C = lobbyDesign.colors;
+const BRAND_BORDER = "rgba(0, 157, 224, 0.25)";
 
 function priceSummary(filters: FeedSearchFilters): string {
   if (filters.minPriceIls == null && filters.maxPriceIls == null) {
@@ -223,17 +227,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: "#f1eee7",
+    backgroundColor: C.surfaceSoft,
   },
   pillOn: {
-    backgroundColor: "#e8fbfd",
+    backgroundColor: C.brandSoft,
     borderWidth: 1,
-    borderColor: "rgba(8,184,200,0.35)",
+    borderColor: BRAND_BORDER,
   },
   pillText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#101820",
+    color: C.foreground,
   },
   priceRow: {
     flexDirection: "row-reverse",
@@ -253,9 +257,14 @@ const styles = StyleSheet.create({
   searchBtn: {
     marginTop: 16,
     paddingVertical: 14,
-    borderRadius: 16,
-    backgroundColor: "#ff6b35",
+    borderRadius: 999,
+    backgroundColor: C.brand,
     alignItems: "center",
+    shadowColor: "rgba(0, 157, 224, 0.35)",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 2,
   },
   searchBtnDisabled: {
     opacity: 0.55,
@@ -269,11 +278,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingVertical: 12,
     borderRadius: 16,
-    backgroundColor: "#e8fbfd",
+    backgroundColor: C.brandSoft,
     alignItems: "center",
   },
   clearBtnText: {
-    color: "#087b85",
+    color: C.brand,
     fontWeight: "700",
     fontSize: 15,
   },
@@ -281,7 +290,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     textAlign: "right",
     fontSize: 13,
-    color: "#087b85",
+    color: C.brand,
     fontWeight: "600",
   },
 });

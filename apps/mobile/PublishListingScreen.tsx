@@ -1,4 +1,4 @@
-import * as ImagePicker from "expo-image-picker";
+﻿import * as ImagePicker from "expo-image-picker";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PublishLocationFields } from "./PublishLocationFields";
@@ -19,6 +19,8 @@ import {
   View,
 } from "react-native";
 import {
+  listingContactPhoneValidationError,
+  normalizeListingContactPhone,
   publishLocationIsValid,
   rentalListingToResolvedLocation,
   LISTING_DESCRIPTION_MAX_CHARACTERS,
@@ -29,6 +31,8 @@ import {
   featureLabels,
   listingPropertyConditionLabel,
   listingPropertyTypeLabel,
+  LISTING_PUBLISH_ROOM_OPTIONS,
+  publishRoomsFromOptionId,
   rentalListingToPublishFormSeed,
   type ListingVideo,
   type PropertyFeature,
@@ -105,9 +109,12 @@ type ImageSlot = { id: string; uri: string; mimeType?: string | null; isRemote?:
 
 export function PublishListingScreen({
   onClose,
+  onPublished,
   editListingId,
 }: {
   onClose: () => void;
+  /** אחרי פרסום/שמירה מוצלחת — מעבר לעמוד המודעה */
+  onPublished?: (listingId: string) => void;
   editListingId?: string;
 }) {
   const { user, loading, openAuthModal, displayNameForUi } = useLobbyAuth();
@@ -117,12 +124,14 @@ export function PublishListingScreen({
   const [editLoadError, setEditLoadError] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
   const [resolvedLocation, setResolvedLocation] = useState<ResolvedLocation | null>(null);
   const [houseNumber, setHouseNumber] = useState("");
   const [propertyTypeId, setPropertyTypeId] = useState("");
   const [propertyConditionId, setPropertyConditionId] = useState("");
   const [priceIls, setPriceIls] = useState("");
-  const [rooms, setRooms] = useState("");
+  const [roomsOptionId, setRoomsOptionId] = useState("");
+  const [roomsPickerOpen, setRoomsPickerOpen] = useState(false);
   const [sizeSqm, setSizeSqm] = useState("");
   const [floor, setFloor] = useState("");
   const [totalFloors, setTotalFloors] = useState("");
@@ -164,6 +173,9 @@ export function PublishListingScreen({
   const propertyTypeButtonLabel = propertyTypeId ? listingPropertyTypeLabel(propertyTypeId) : "בחרו";
   const propertyConditionButtonLabel = propertyConditionId
     ? listingPropertyConditionLabel(propertyConditionId)
+    : "בחרו";
+  const roomsButtonLabel = roomsOptionId
+    ? (LISTING_PUBLISH_ROOM_OPTIONS.find((o) => o.id === roomsOptionId)?.label ?? roomsOptionId)
     : "בחרו";
   const entryDateHebrew = useMemo(() => {
     try {
@@ -246,12 +258,13 @@ export function PublishListingScreen({
         setRequiresModerationResubmit(listing.moderationAction === "returned_to_draft");
         const seed = rentalListingToPublishFormSeed(listing);
         setTitle(seed.title);
+        setContactPhone(seed.contactPhone);
         setResolvedLocation(rentalListingToResolvedLocation(listing));
         setHouseNumber(seed.houseNumber);
         setPropertyTypeId(seed.propertyTypeId);
         setPropertyConditionId(seed.propertyConditionId);
         setPriceIls(seed.priceIls);
-        setRooms(seed.rooms);
+        setRoomsOptionId(seed.roomsOptionId);
         setSizeSqm(seed.sizeSqm);
         setFloor(seed.floor);
         setTotalFloors(seed.totalFloors);
@@ -375,9 +388,11 @@ export function PublishListingScreen({
     if (!Number.isFinite(price) || price < 1) {
       return "נא להזין מחיר חודשי תקין בשקלים.";
     }
-    const roomsNum = Number(rooms);
-    if (!Number.isFinite(roomsNum) || roomsNum < 0.5 || roomsNum > 20) {
-      return "נא להזין מספר חדרים בין 0.5 ל־20.";
+    if (!roomsOptionId) {
+      return "נא לבחור מספר חדרים.";
+    }
+    if (publishRoomsFromOptionId(roomsOptionId) == null) {
+      return "נא לבחור מספר חדרים תקין.";
     }
     const sqm = Number(sizeSqm);
     if (!Number.isFinite(sqm) || sqm < 5 || sqm > 2000) {
@@ -399,6 +414,10 @@ export function PublishListingScreen({
         return "נא לבחור תאריך כניסה.";
       }
     }
+    const phoneError = listingContactPhoneValidationError(contactPhone);
+    if (phoneError) {
+      return phoneError;
+    }
     if (!description.trim()) {
       return "נא למלא תיאור (״על הדירה״).";
     }
@@ -419,12 +438,13 @@ export function PublishListingScreen({
     return null;
   }, [
     title,
+    contactPhone,
     resolvedLocation,
     houseNumber,
     propertyTypeId,
     propertyConditionId,
     priceIls,
-    rooms,
+    roomsOptionId,
     sizeSqm,
     floor,
     totalFloors,
@@ -499,6 +519,7 @@ export function PublishListingScreen({
         listingId,
         publisherId: user.uid,
         publisherDisplayName: displayNameForUi,
+        contactPhone: normalizeListingContactPhone(contactPhone),
         title: title.trim(),
         location: resolvedLocation!,
         houseNumber: houseNumber.trim(),
@@ -507,7 +528,7 @@ export function PublishListingScreen({
         propertyConditionId,
         propertyConditionLabel: listingPropertyConditionLabel(propertyConditionId),
         priceIls: Number(priceIls),
-        rooms: Number(rooms),
+        rooms: publishRoomsFromOptionId(roomsOptionId)!,
         sizeSqm: Number(sizeSqm),
         floor: Number(floor),
         totalFloors: Number(totalFloors),
@@ -530,8 +551,12 @@ export function PublishListingScreen({
         await saveListingDraft(payload);
       }
 
-      setSavedId(listingId);
       setProgress(null);
+      if (onPublished) {
+        onPublished(listingId);
+      } else {
+        setSavedId(listingId);
+      }
     } catch {
       setError("השמירה נכשלה. בדקו חיבור, הרשאות Storage, ונסו שוב.");
       setProgress(null);
@@ -546,12 +571,13 @@ export function PublishListingScreen({
     videoMime,
     videoDurationSec,
     title,
+    contactPhone,
     resolvedLocation,
     houseNumber,
     propertyTypeId,
     propertyConditionId,
     priceIls,
-    rooms,
+    roomsOptionId,
     sizeSqm,
     floor,
     totalFloors,
@@ -566,6 +592,7 @@ export function PublishListingScreen({
     existingVideo,
     videoRemoved,
     requiresModerationResubmit,
+    onPublished,
   ]);
 
   if (!isFirebaseConfigured()) {
@@ -686,12 +713,10 @@ export function PublishListingScreen({
             onChangeText={(t) => setPriceIls(t.replace(/[^\d]/g, ""))}
             keyboardType="number-pad"
           />
-          <Field
-            label="חדרים"
-            value={rooms}
-            onChangeText={(t) => setRooms(t.replace(/[^\d.]/g, ""))}
-            keyboardType="decimal-pad"
-          />
+          <Text style={styles.fieldLabel}>חדרים*</Text>
+          <Pressable style={styles.selectBtn} onPress={() => setRoomsPickerOpen(true)}>
+            <Text style={[styles.selectBtnText, !roomsOptionId && styles.selectBtnPlaceholder]}>{roomsButtonLabel}</Text>
+          </Pressable>
           <Field label="שטח במ״ר" value={sizeSqm} onChangeText={(t) => setSizeSqm(t.replace(/[^\d]/g, ""))} keyboardType="number-pad" />
           <Field label="קומה" value={floor} onChangeText={(t) => setFloor(t.replace(/[^\d]/g, ""))} keyboardType="number-pad" />
           <Field label="קומות בבניין" value={totalFloors} onChangeText={(t) => setTotalFloors(t.replace(/[^\d]/g, ""))} keyboardType="number-pad" />
@@ -781,6 +806,14 @@ export function PublishListingScreen({
           ) : null}
 
           <Text style={styles.sectionLabel}>פרטי מפרסם</Text>
+          <Field
+            label="טלפון ליצירת קשר *"
+            value={contactPhone}
+            onChangeText={setContactPhone}
+            keyboardType="phone-pad"
+            textAlign="left"
+          />
+          <Text style={styles.fieldHint}>מוצג במודעה לשוכרים שרוצים להתקשר.</Text>
           <Text style={styles.publisherReadonly}>
             שם להצגה: <Text style={styles.publisherReadonlyStrong}>{displayNameForUi}</Text>
           </Text>
@@ -835,6 +868,31 @@ export function PublishListingScreen({
             </View>
           ) : null}
         </ScrollView>
+
+        <Modal visible={roomsPickerOpen} transparent animationType="fade" onRequestClose={() => setRoomsPickerOpen(false)}>
+          <View style={styles.modalRoot}>
+            <Pressable style={styles.modalDismissArea} onPress={() => setRoomsPickerOpen(false)} />
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>מספר חדרים</Text>
+              <FlatList
+                data={LISTING_PUBLISH_ROOM_OPTIONS}
+                keyExtractor={(item) => item.id}
+                style={styles.modalList}
+                renderItem={({ item }) => (
+                  <Pressable
+                    style={styles.modalRow}
+                    onPress={() => {
+                      setRoomsOptionId(item.id);
+                      setRoomsPickerOpen(false);
+                    }}
+                  >
+                    <Text style={styles.modalRowText}>{item.label}</Text>
+                  </Pressable>
+                )}
+              />
+            </View>
+          </View>
+        </Modal>
 
         <Modal visible={typePickerOpen} transparent animationType="fade" onRequestClose={() => setTypePickerOpen(false)}>
           <View style={styles.modalRoot}>
@@ -934,12 +992,14 @@ function Field({
   onChangeText,
   maxLength,
   keyboardType,
+  textAlign = "right",
 }: {
   label: string;
   value: string;
   onChangeText: (t: string) => void;
   maxLength?: number;
-  keyboardType?: "default" | "number-pad" | "decimal-pad";
+  keyboardType?: "default" | "number-pad" | "decimal-pad" | "phone-pad";
+  textAlign?: "left" | "right";
 }) {
   return (
     <View style={styles.fieldBlock}>
@@ -950,7 +1010,8 @@ function Field({
         onChangeText={onChangeText}
         maxLength={maxLength}
         keyboardType={keyboardType ?? "default"}
-        textAlign="right"
+        textAlign={textAlign}
+        autoComplete={keyboardType === "phone-pad" ? "tel" : undefined}
       />
     </View>
   );
@@ -980,12 +1041,12 @@ const styles = StyleSheet.create({
   headerAction: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#08b8c8",
+    color: "#009de0",
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#101820",
+    color: "#202125",
   },
   scroll: {
     flex: 1,
@@ -1027,7 +1088,7 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontSize: 16,
     fontWeight: "600",
-    color: "#101820",
+    color: "#202125",
   },
   selectBtnPlaceholder: {
     color: "#8b949b",
@@ -1065,7 +1126,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     paddingVertical: 14,
     paddingHorizontal: 4,
-    color: "#101820",
+    color: "#202125",
   },
   modalList: {
     flexGrow: 0,
@@ -1087,7 +1148,7 @@ const styles = StyleSheet.create({
   },
   modalRowTextSelected: {
     fontWeight: "900",
-    color: "#0299a8",
+    color: "#008ecb",
   },
   publisherReadonly: {
     textAlign: "right",
@@ -1109,6 +1170,14 @@ const styles = StyleSheet.create({
     color: "#25313b",
     marginBottom: 6,
   },
+  fieldHint: {
+    textAlign: "right",
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#74767e",
+    marginTop: -4,
+    marginBottom: 10,
+  },
   fieldInput: {
     borderWidth: 1,
     borderColor: "rgba(16,24,32,0.12)",
@@ -1118,7 +1187,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     backgroundColor: "#fafafa",
-    color: "#101820",
+    color: "#202125",
   },
   textArea: {
     borderWidth: 1,
@@ -1130,7 +1199,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     backgroundColor: "#fafafa",
-    color: "#101820",
+    color: "#202125",
   },
   counter: {
     textAlign: "right",
@@ -1159,12 +1228,12 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#101820",
+    color: "#202125",
   },
   hint: {
     textAlign: "right",
     fontSize: 13,
-    color: "#687076",
+    color: "#64748b",
     marginBottom: 10,
   },
   thumbRow: {
@@ -1215,7 +1284,7 @@ const styles = StyleSheet.create({
   secondaryBtnText: {
     fontWeight: "900",
     fontSize: 14,
-    color: "#101820",
+    color: "#202125",
   },
   videoMetaRow: {
     flexDirection: "row-reverse",
@@ -1229,10 +1298,10 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontSize: 13,
     fontWeight: "700",
-    color: "#687076",
+    color: "#64748b",
   },
   linkText: {
-    color: "#08b8c8",
+    color: "#009de0",
     fontWeight: "800",
     fontSize: 14,
   },
@@ -1247,12 +1316,12 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: "#687076",
+    borderColor: "#64748b",
     marginTop: 2,
   },
   checkBoxOn: {
-    backgroundColor: "#08b8c8",
-    borderColor: "#08b8c8",
+    backgroundColor: "#009de0",
+    borderColor: "#009de0",
   },
   checkLabel: {
     flex: 1,
@@ -1264,7 +1333,7 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     marginTop: 16,
-    backgroundColor: "#101820",
+    backgroundColor: "#009DE0",
     paddingVertical: 16,
     borderRadius: 999,
     alignItems: "center",
@@ -1324,7 +1393,7 @@ const styles = StyleSheet.create({
   gateTitle: {
     fontSize: 22,
     fontWeight: "900",
-    color: "#101820",
+    color: "#202125",
     textAlign: "right",
     marginBottom: 10,
   },
@@ -1337,7 +1406,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   gateBtn: {
-    backgroundColor: "#101820",
+    backgroundColor: "#009DE0",
     paddingVertical: 14,
     borderRadius: 999,
     alignItems: "center",
@@ -1352,7 +1421,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   linkBtnText: {
-    color: "#08b8c8",
+    color: "#009de0",
     fontWeight: "800",
     fontSize: 15,
   },

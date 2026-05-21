@@ -1,8 +1,14 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useId, useRef, useState } from "react";
 import { FEED_SORT_OPTIONS, feedSortTriggerLabel, type FeedSortId } from "@lobby/shared";
-import styles from "./FeedSortMenu.module.css";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown } from "lucide-react";
 
 export function FeedSortMenu({
   value,
@@ -13,69 +19,31 @@ export function FeedSortMenu({
   onChange: (sortId: FeedSortId) => void;
   disabled?: boolean;
 }) {
-  const menuId = useId();
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    const onPointerDown = (e: PointerEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [open]);
-
   return (
-    <div className={styles.wrap} ref={wrapRef}>
-      <button
-        type="button"
-        className={styles.trigger}
-        aria-expanded={open}
-        aria-controls={menuId}
-        aria-haspopup="listbox"
-        disabled={disabled}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <span>{feedSortTriggerLabel(value)}</span>
-        <span className={styles.chevron} aria-hidden="true">
-          {open ? "▴" : "▾"}
-        </span>
-      </button>
-      {open ? (
-        <ul id={menuId} className={styles.menu} role="listbox" aria-label="מיון מודעות">
-          {FEED_SORT_OPTIONS.map((opt) => {
-            const selected = value === opt.id;
-            return (
-              <li key={opt.id} role="presentation">
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={selected}
-                  className={styles.option}
-                  onClick={() => {
-                    onChange(opt.id);
-                    setOpen(false);
-                  }}
-                >
-                  <span className={styles.optionLabel}>{opt.label}</span>
-                  {selected ? (
-                    <span className={styles.check} aria-hidden="true">
-                      ✓
-                    </span>
-                  ) : (
-                    <span className={styles.checkPlaceholder} aria-hidden="true" />
-                  )}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      ) : null}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={disabled}
+          className="h-auto gap-1 border-0 bg-transparent px-0 py-0 text-sm font-semibold text-graphite shadow-none hover:bg-transparent hover:text-graphite/75"
+        >
+          {feedSortTriggerLabel(value)}
+          <ChevronDown className="size-4 opacity-60" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        {FEED_SORT_OPTIONS.map((opt) => (
+          <DropdownMenuItem
+            key={opt.id}
+            onSelect={() => onChange(opt.id)}
+            className={value === opt.id ? "bg-accent" : undefined}
+          >
+            {opt.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

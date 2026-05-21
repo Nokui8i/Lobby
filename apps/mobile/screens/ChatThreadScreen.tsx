@@ -318,7 +318,7 @@ function ListingChatThreadView({
               <Ionicons
                 name="send"
                 size={20}
-                color={!draft.trim() || sending ? '#c5c9cc' : '#08b8c8'}
+                color={!draft.trim() || sending ? '#c5c9cc' : '#009de0'}
               />
             </Pressable>
           </View>

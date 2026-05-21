@@ -20,11 +20,28 @@
 
 ## פקודות שימושיות
 
+הרצה **מתיקיית השורש** של המונורפו (`הבית שלי`):
+
+| אפליקציה | פקודה | כתובת |
+|----------|--------|--------|
+| **אתר (web)** | `npm run web:dev` או `npm run dev:web` | http://localhost:3000 |
+| **אדמין** | `npm run admin:dev` או `npm run dev:admin` | http://localhost:3001 |
+| **מובייל (Expo)** | `npm run mobile:start` או `npm run dev:mobile` | QR / אמולטור |
+
 ```bash
+# אתר
 npm run web:dev
+
+# ממשק ניהול (פורט 3001)
+npm run admin:dev
+
+# אפליקציה (Expo)
 npm run mobile:start
+
 npm run firebase:deploy
 ```
+
+עיצוב: מקור משותף ב־`packages/shared` (`lobbyDesign`) + Mainline/shadcn ב־`apps/web`. אדמין ומובייל משתמשים באותם צבעים ופריסה (1220px / gutter) בהדרגה.
 
 ## סטטוס עיקרי (עדכון ידני)
 

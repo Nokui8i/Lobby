@@ -1,9 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   groupLocationSuggestionsByKind,
-  LOCATION_STREET_SECTION_NOTICE_HE,
   locationSuggestionDisplaySubtitle,
   locationSuggestionDisplayTitle,
   resolvedLocationDisplayLine,
@@ -17,7 +16,28 @@ import {
   lobbyPlacesResolve,
   lobbyPlacesStreetsByCity,
 } from "@/lib/firebase/places";
-import styles from "./LocationSearchInput.module.css";
+import { cn } from "@/lib/utils";
+
+const loc = {
+  wrap: "relative direction-rtl",
+  input:
+    "h-12 w-full rounded-2xl border-0 bg-soft px-4 text-[15px] text-graphite focus:bg-white focus:shadow-float disabled:opacity-60",
+  selected: "mt-2 rounded-xl border border-brand/20 bg-brand/5 px-3 py-2.5",
+  selectedTitle: "m-0 text-sm font-semibold text-graphite",
+  selectedMeta: "mt-1 mb-0 text-[13px] text-graphite/50",
+  clearBtn: "mt-2 cursor-pointer border-0 bg-transparent p-0 text-[13px] font-bold text-brand",
+  panel:
+    "absolute top-[calc(100%+6px)] right-0 left-0 z-[200] max-h-[min(280px,50vh)] overflow-auto rounded-xl border border-slate-200/90 bg-white shadow-[0_4px_16px_rgba(15,23,42,0.1),0_12px_32px_rgba(15,23,42,0.12)]",
+  section: "border-t border-[#e9edf7] first:border-t-0",
+  sectionHeader: "bg-[#F5FAFC] px-3.5 py-2 text-[12px] font-extrabold text-[#a3aed0]",
+  option:
+    "block w-full cursor-pointer border-0 border-t border-graphite/5 bg-white px-3.5 py-3 text-right first:border-t-0 hover:bg-brand/10",
+  optionTitle: "block text-sm font-semibold text-graphite",
+  optionMeta: "mt-0.5 block text-[13px] text-[#a3aed0]",
+  hint: "mt-1.5 mb-0 text-[13px] text-[#a3aed0]",
+  error: "mt-1.5 mb-0 text-[13px] text-red-700",
+  loading: "px-3.5 py-3 text-[13px] text-[#a3aed0]",
+} as const;
 
 function newSessionToken(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -179,7 +199,7 @@ export function LocationSearchInput({
       : null;
 
   return (
-    <div className={styles.wrap} ref={wrapRef}>
+    <div className={loc.wrap} ref={wrapRef}>
       {!compact && label ? (
       <label htmlFor={listId}>
         {label}
@@ -188,7 +208,13 @@ export function LocationSearchInput({
       ) : null}
       <input
         id={listId}
-        className={styles.input}
+        className={cn(
+          loc.input,
+          compact &&
+            "rounded-xl border border-slate-200/80 font-medium outline-none focus:border-brand focus:bg-soft focus:shadow-none focus:ring-2 focus:ring-brand/15",
+          compact && variant === "feed" && "h-10 bg-white px-3 text-sm",
+          compact && variant === "publish" && "h-11 bg-soft px-4 text-[15px]",
+        )}
         type="search"
         autoComplete="off"
         aria-label={compact ? label || placeholder : undefined}
@@ -211,26 +237,23 @@ export function LocationSearchInput({
       />
 
       {value && !compact ? (
-        <div className={styles.selected}>
-          <p className={styles.selectedTitle}>{value.primaryLabel}</p>
-          <p className={styles.selectedMeta}>{value.secondaryLabel || value.cityLabel}</p>
-          <button type="button" className={styles.clearBtn} onClick={clearSelection} disabled={disabled}>
+        <div className={loc.selected}>
+          <p className={loc.selectedTitle}>{value.primaryLabel}</p>
+          <p className={loc.selectedMeta}>{value.secondaryLabel || value.cityLabel}</p>
+          <button type="button" className={loc.clearBtn} onClick={clearSelection} disabled={disabled}>
             שינוי כתובת
           </button>
         </div>
       ) : null}
 
       {open && !value && (loading || suggestions.length > 0) ? (
-        <div className={styles.panel} role="listbox">
-          {loading ? <p className={styles.loading}>מחפשים…</p> : null}
+        <div className={loc.panel} role="listbox">
+          {loading ? <p className={loc.loading}>מחפשים…</p> : null}
           {suggestionGroups
             ? suggestionGroups.map((group) => (
-                <div key={group.kind} className={styles.section}>
-                  <div className={styles.sectionHeader} role="presentation">
-                    <span>{group.label}</span>
-                    {group.kind === "street" && variant === "feed" ? (
-                      <span className={styles.sectionHeaderNote}>{LOCATION_STREET_SECTION_NOTICE_HE}</span>
-                    ) : null}
+                <div key={group.kind} className={loc.section}>
+                  <div className={loc.sectionHeader} role="presentation">
+                    {group.label}
                   </div>
                   {group.items.map((item) => {
                     const subtitle = locationSuggestionDisplaySubtitle(item);
@@ -238,12 +261,12 @@ export function LocationSearchInput({
                       <button
                         key={item.placeId}
                         type="button"
-                        className={styles.option}
+                        className={loc.option}
                         role="option"
                         onClick={() => void pickSuggestion(item)}
                       >
-                        <span className={styles.optionTitle}>{locationSuggestionDisplayTitle(item)}</span>
-                        {subtitle ? <span className={styles.optionMeta}>{subtitle}</span> : null}
+                        <span className={loc.optionTitle}>{locationSuggestionDisplayTitle(item)}</span>
+                        {subtitle ? <span className={loc.optionMeta}>{subtitle}</span> : null}
                       </button>
                     );
                   })}
@@ -253,22 +276,22 @@ export function LocationSearchInput({
                 <button
                   key={item.placeId}
                   type="button"
-                  className={styles.option}
+                  className={loc.option}
                   role="option"
                   onClick={() => void pickSuggestion(item)}
                 >
-                  <span className={styles.optionTitle}>{locationSuggestionDisplayTitle(item)}</span>
+                  <span className={loc.optionTitle}>{locationSuggestionDisplayTitle(item)}</span>
                   {locationSuggestionDisplaySubtitle(item) ? (
-                    <span className={styles.optionMeta}>{locationSuggestionDisplaySubtitle(item)}</span>
+                    <span className={loc.optionMeta}>{locationSuggestionDisplaySubtitle(item)}</span>
                   ) : null}
                 </button>
               ))}
         </div>
       ) : null}
 
-      {error ? <p className={styles.error}>{error}</p> : null}
+      {error ? <p className={loc.error}>{error}</p> : null}
       {!compact && !value && !error ? (
-        <p className={styles.hint}>
+        <p className={loc.hint}>
           {searchMode === "city"
             ? "בחרו עיר מהרשימה."
             : searchMode === "street"

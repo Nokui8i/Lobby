@@ -1,4 +1,4 @@
-import type { User } from "firebase/auth";
+import { updateProfile, type User } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { USERS_COLLECTION } from "@lobby/shared";
 import { getFirestoreDb } from "./client";
@@ -18,6 +18,11 @@ export async function ensureUserDocument(user: User, displayName?: string | null
   let name = explicit || authName;
   if (!name) {
     name = existing || emailLocal || "משתמש";
+  }
+
+  const authCurrent = user.displayName?.trim() || "";
+  if (authCurrent !== name) {
+    await updateProfile(user, { displayName: name });
   }
 
   await setDoc(

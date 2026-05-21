@@ -57,3 +57,53 @@ export function formatListingLocationLine(
   const parts = [street, listing.neighborhood.trim(), listing.city.trim()].filter((p) => p.length > 0);
   return parts.join(", ");
 }
+
+type ListingCardLocationFields = Pick<
+  RentalListing,
+  "city" | "neighborhood" | "streetHint" | "streetLine" | "houseNumber" | "districtLabel" | "areaLabel"
+>;
+
+/** שורת כתובת ראשית בכרטיס פיד — סגנון יד2: רחוב+מספר, עיר */
+export function formatListingCardAddressLine(listing: ListingCardLocationFields): string {
+  const streetCombined = [listing.streetLine?.trim(), listing.houseNumber?.trim()]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  const street = streetCombined || listing.streetHint.trim();
+  const city = listing.city.trim();
+  const neighborhood = listing.neighborhood.trim();
+
+  if (street && city) {
+    return `${street}, ${city}`;
+  }
+  if (street && neighborhood) {
+    return `${street}, ${neighborhood}`;
+  }
+  if (neighborhood && city) {
+    return `${neighborhood}, ${city}`;
+  }
+  return city || neighborhood || street;
+}
+
+/** שורת מחוז/אזור מתחת לכתובת בכרטיס פיד */
+export function formatListingCardDistrictLine(
+  listing: Pick<RentalListing, "districtLabel" | "areaLabel">,
+): string {
+  return listing.districtLabel?.trim() || listing.areaLabel?.trim() || "";
+}
+
+/** מחיר בכרטיס פיד — ₪ עם רווח לפני המספר (כמו יד2) */
+export function formatListingCardPriceIls(priceIls: number): { symbol: string; amount: string } {
+  return {
+    symbol: "₪",
+    amount: priceIls.toLocaleString("he-IL"),
+  };
+}
+
+/** חדרים בכרטיס פיד */
+export function formatListingCardRoomsLine(rooms: number): string {
+  if (!(rooms > 0)) {
+    return "";
+  }
+  return `${rooms} חדרים`;
+}

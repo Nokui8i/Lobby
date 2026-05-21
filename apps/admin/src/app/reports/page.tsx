@@ -22,7 +22,8 @@ import {
   moderateListingFromReport,
   updateAdminReportStatus,
 } from "@/lib/firebase/functions";
-import styles from "./reports.module.css";
+import { ap } from "@/lib/admin-page-classes";
+import { cn } from "@/lib/utils";
 
 type ModerationPending =
   | { type: "remove"; report: ListingReportRecord }
@@ -159,46 +160,46 @@ export default function AdminReportsPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
+    <div className={ap.page}>
+      <header className={ap.header}>
         <div>
-          <Link href="/" className={styles.back}>
+          <Link href="/" className={ap.back}>
             ← לוח בקרה
           </Link>
-          <h1>דיווחים</h1>
-          <p className={styles.sub}>
+          <h1 className={ap.title}>דיווחים</h1>
+          <p className={ap.sub}>
             {openCount} פתוחים · {reports.length} סה״כ
           </p>
         </div>
-        <button type="button" className={styles.refreshBtn} disabled={loading} onClick={() => void load()}>
+        <button type="button" className={ap.refreshBtn} disabled={loading} onClick={() => void load()}>
           רענון
         </button>
       </header>
 
       {pendingListings.length > 0 ? (
-        <section className={styles.pendingSection}>
-          <h2 className={styles.pendingTitle}>ממתינות לאישור אחרי תיקון ({pendingListings.length})</h2>
-          <ul className={styles.pendingList}>
+        <section className={ap.pendingSection}>
+          <h2 className={ap.pendingTitle}>ממתינות לאישור אחרי תיקון ({pendingListings.length})</h2>
+          <ul className={ap.pendingList}>
             {pendingListings.map((listing) => (
-              <li key={listing.id} className={styles.pendingItem}>
+              <li key={listing.id} className={ap.pendingItem}>
                 <div>
                   <Link
                     href={consumerListingUrl(listing.id)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={styles.pendingLink}
+                    className={ap.pendingLink}
                   >
                     {listing.title}
                   </Link>
-                  <p className={styles.pendingMeta}>
+                  <p className={ap.pendingMeta}>
                     נשלח לבדיקה: {formatReportDate(listing.resubmittedAt)} · נותרו כ־
                     {listing.publishRemainingDays} ימי פרסום
                   </p>
                 </div>
-                <div className={styles.pendingActions}>
+                <div className={ap.pendingActions}>
                   <button
                     type="button"
-                    className={styles.approveBtn}
+                    className={ap.approveBtn}
                     disabled={busyId !== null}
                     onClick={() => setPendingListingAction({ type: "approve", listing })}
                   >
@@ -206,7 +207,7 @@ export default function AdminReportsPage() {
                   </button>
                   <button
                     type="button"
-                    className={styles.rejectBtn}
+                    className={ap.rejectBtn}
                     disabled={busyId !== null}
                     onClick={() => {
                       setDraftNote("");
@@ -222,23 +223,23 @@ export default function AdminReportsPage() {
         </section>
       ) : null}
 
-      <div className={styles.filters}>
+      <div className={ap.filters}>
         <button
           type="button"
-          className={filters.statusTab === "open" ? styles.filterOn : styles.filter}
+          className={cn(ap.filter, filters.statusTab === "open" && ap.filterOn)}
           onClick={() => setFilters((f) => ({ ...f, statusTab: "open" }))}
         >
           פתוחים
         </button>
         <button
           type="button"
-          className={filters.statusTab === "all" ? styles.filterOn : styles.filter}
+          className={cn(ap.filter, filters.statusTab === "all" && ap.filterOn)}
           onClick={() => setFilters((f) => ({ ...f, statusTab: "all" }))}
         >
           הכל
         </button>
         <select
-          className={styles.select}
+          className={ap.select}
           value={filters.sort}
           aria-label="מיון"
           onChange={(e) =>
@@ -249,7 +250,7 @@ export default function AdminReportsPage() {
           <option value="oldest">ישן לחדש</option>
         </select>
         <select
-          className={styles.select}
+          className={ap.select}
           value={filters.reason}
           aria-label="סוג דיווח"
           onChange={(e) =>
@@ -264,7 +265,7 @@ export default function AdminReportsPage() {
         </select>
         <input
           type="search"
-          className={styles.searchInput}
+          className={ap.searchInput}
           placeholder="חיפוש…"
           aria-label="חיפוש"
           value={filters.search}
@@ -272,16 +273,16 @@ export default function AdminReportsPage() {
         />
       </div>
 
-      {error ? <p className={styles.error}>שגיאה בטעינה או בעדכון. נסו לרענן.</p> : null}
-      {loading ? <p className={styles.empty}>טוען…</p> : null}
-      {!loading && filtered.length === 0 ? <p className={styles.empty}>אין דיווחים.</p> : null}
+      {error ? <p className={ap.error}>שגיאה בטעינה או בעדכון. נסו לרענן.</p> : null}
+      {loading ? <p className={ap.empty}>טוען…</p> : null}
+      {!loading && filtered.length === 0 ? <p className={ap.empty}>אין דיווחים.</p> : null}
 
-      <ul className={styles.list}>
+      <ul className={ap.list}>
         {filtered.map((report) => (
-          <li key={report.id} className={styles.item}>
-            <div className={styles.itemTop}>
+          <li key={report.id} className={ap.item}>
+            <div className={ap.itemTop}>
               <div>
-                <h2>
+                <h2 className="text-base font-semibold">
                   <Link
                     href={consumerListingUrl(report.listingId)}
                     target="_blank"
@@ -290,9 +291,9 @@ export default function AdminReportsPage() {
                     {report.listingTitle || report.listingId}
                   </Link>
                 </h2>
-                <p className={styles.reason}>{report.reasonLabel}</p>
-                {report.otherDetails ? <p className={styles.other}>{report.otherDetails}</p> : null}
-                <p className={styles.meta}>
+                <p className={ap.reason}>{report.reasonLabel}</p>
+                {report.otherDetails ? <p className={ap.other}>{report.otherDetails}</p> : null}
+                <p className={ap.meta}>
                   מדווח:{" "}
                   <Link href={adminUsersSearchUrl(report.reporterEmail || report.reporterId)}>
                     {report.reporterEmail || report.reporterId || "—"}
@@ -304,11 +305,11 @@ export default function AdminReportsPage() {
                   </Link>
                 </p>
               </div>
-              <time className={styles.time}>{formatReportDate(report.createdAt)}</time>
+              <time className={ap.time}>{formatReportDate(report.createdAt)}</time>
             </div>
 
             <select
-              className={styles.actionSelect}
+              className={ap.actionSelect}
               disabled={busyId === report.id}
               defaultValue=""
               aria-label="פעולה"
@@ -359,10 +360,10 @@ export default function AdminReportsPage() {
         open={pendingListingAction?.type === "reject"}
         title="לדחות ולבקש תיקון?"
         description={
-          <label className={styles.draftField}>
-            <span className={styles.draftLabel}>הסבר למפרסם</span>
+          <label className={ap.draftField}>
+            <span className={ap.draftLabel}>הסבר למפרסם</span>
             <textarea
-              className={styles.draftTextarea}
+              className={ap.draftTextarea}
               rows={4}
               maxLength={ADMIN_MODERATION_DRAFT_NOTE_MAX}
               value={draftNote}
@@ -399,10 +400,10 @@ export default function AdminReportsPage() {
         open={pending?.type === "draft"}
         title="להחזיר לטיוטה?"
         description={
-          <label className={styles.draftField}>
-            <span className={styles.draftLabel}>הסבר למפרסם</span>
+          <label className={ap.draftField}>
+            <span className={ap.draftLabel}>הסבר למפרסם</span>
             <textarea
-              className={styles.draftTextarea}
+              className={ap.draftTextarea}
               rows={4}
               maxLength={ADMIN_MODERATION_DRAFT_NOTE_MAX}
               value={draftNote}

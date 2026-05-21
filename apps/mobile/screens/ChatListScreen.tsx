@@ -11,7 +11,8 @@ import {
 } from '@lobby/shared';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
-import { ImageBackground, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native';
 import { LobbyConfirmModal } from '../components/LobbyConfirmModal';
 import { FloatingMainTabBar } from '../components/MainTabBar';
 import { ThreadRowMenu } from '../components/ThreadRowMenu';
@@ -249,13 +250,13 @@ export function ChatListView({
             {deleteError ? <Text style={appStyles.chatListError}>{deleteError}</Text> : null}
             {!listLoading && !listError && inboxRows.length === 0 ? (
               <View style={appStyles.chatEmptyWrap}>
-                <ImageBackground
-                  source={require('./assets/3dicons-chat-bubble-dynamic-color.png')}
-                  style={appStyles.chatEmptyArt}
-                  imageStyle={appStyles.chatEmptyArtImage}
-                  resizeMode="contain"
-                  accessibilityElementsHidden
-                />
+                <View style={appStyles.chatEmptyIconCircle}>
+                  <Ionicons name="chatbubbles-outline" size={32} color="#009de0" />
+                </View>
+                <Text style={appStyles.chatEmptyTitle}>אין שיחות עדיין</Text>
+                <Text style={appStyles.chatEmptyHint}>
+                  שלחו הודעה מעמוד מודעה כדי להתחיל שיחה סביב הדירה.
+                </Text>
               </View>
             ) : null}
             {filteredRows.map((row) => {

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import styles from "./AdminConfirmModal.module.css";
+import { ap } from "@/lib/admin-page-classes";
+import { cn } from "@/lib/utils";
 
 type AdminConfirmModalProps = {
   open: boolean;
@@ -44,25 +45,33 @@ export function AdminConfirmModal({
   }
 
   return (
-    <div className={styles.backdrop} role="presentation" onClick={busy ? undefined : onCancel}>
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-foreground/40 p-5 backdrop-blur-[2px]"
+      role="presentation"
+      onClick={busy ? undefined : onCancel}
+    >
       <div
-        className={styles.dialog}
+        className="bubble-card w-full max-w-[440px] p-5 shadow-lg"
         role="dialog"
         aria-modal="true"
         aria-labelledby="admin-confirm-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="admin-confirm-title">{title}</h2>
-        {description ? <div className={styles.body}>{description}</div> : null}
-        <div className={styles.actions}>
-          <button type="button" className={styles.cancelBtn} disabled={busy} onClick={onCancel}>
+        <h2 id="admin-confirm-title" className="font-display mb-2.5 text-lg font-semibold">
+          {title}
+        </h2>
+        {description ? (
+          <div className="text-muted-foreground mb-4 text-sm leading-relaxed">{description}</div>
+        ) : null}
+        <div className="flex flex-wrap justify-end gap-2.5 pt-1">
+          <button type="button" disabled={busy} onClick={onCancel} className={ap.modalCancelBtn}>
             {cancelLabel}
           </button>
           <button
             type="button"
-            className={danger ? styles.dangerBtn : styles.confirmBtn}
             disabled={busy}
             onClick={onConfirm}
+            className={cn(danger ? ap.modalDangerConfirmBtn : ap.modalConfirmBtn)}
           >
             {busy ? "מבצע…" : confirmLabel}
           </button>
@@ -71,3 +80,5 @@ export function AdminConfirmModal({
     </div>
   );
 }
+
+

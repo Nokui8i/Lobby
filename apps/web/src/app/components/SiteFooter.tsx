@@ -1,60 +1,32 @@
 import Link from "next/link";
-import styles from "./SiteFooter.module.css";
 
 const footerLinks: { href: string; label: string }[] = [
-  { href: "/terms", label: "תקנון שימוש" },
-  { href: "/privacy", label: "מדיניות פרטיות" },
-  { href: "/accessibility", label: "הצהרת נגישות" },
-  { href: "/reporting-policy", label: "מדיניות דיווחים" },
-  { href: "/listing-removal", label: "הסרת מודעות" },
-  { href: "/contact", label: "יצירת קשר" },
+  { href: "/terms", label: "תקנון" },
+  { href: "/privacy", label: "פרטיות" },
+  { href: "/accessibility", label: "נגישות" },
+  { href: "/reporting-policy", label: "דיווחים" },
+  { href: "/contact", label: "צור קשר" },
 ];
 
+/** Footer — עיצוב Lovable */
 export function SiteFooter() {
   return (
-    <footer className={styles.footer}>
-      <div className={styles.inner}>
-        <div className={styles.brand}>
-          <strong>LOBBY</strong>
-          <p>
-            לובי היא פלטפורמת פרסום ותקשורת למציאת דירות להשכרה ישירות מול
-            מפרסמים, עם דגש על אפס דמי תיווך לשוכר.
-          </p>
+    <footer className="mt-24 border-t border-white/60 bg-white/50 backdrop-blur">
+      <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-4 px-6 py-10 text-sm text-graphite/70 md:flex-row">
+        <div className="flex items-center gap-2">
+          <div className="grid h-7 w-7 place-items-center rounded-lg bg-brand text-xs font-black text-white shadow-puffy">
+            L
+          </div>
+          <span className="font-bold text-graphite">LOBBY</span>
+          <span>© {new Date().getFullYear()}</span>
         </div>
-
-        <div className={styles.columns}>
-          <section>
-            <h2>הבהרה חשובה</h2>
-            <p>
-              Lobby אינה מתווך, אינה צד לעסקה, אינה מייצגת שוכר או משכיר, אינה
-              מנהלת משא ומתן ואינה גובה משוכרים דמי תיווך, דמי הצלחה או אחוזים.
-            </p>
-          </section>
-
-          <section>
-            <h2>דיווח ובטיחות</h2>
-            <p>
-              אם ביקשו ממך עמלה, תשלום צדדי, פרטי תשלום חשודים, או שהמודעה נראית
-              מזויפת/לא מדויקת, צריך לדווח דרך כפתור הדיווח בעמוד המודעה.
-            </p>
-          </section>
-
-          <section>
-            <h2>תנאים ומידע</h2>
-            <nav className={styles.links} aria-label="קישורי מידע משפטי">
-              {footerLinks.map((item) => (
-                <Link key={item.href} href={item.href} className={styles.linkPill}>
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </section>
-        </div>
-
-        <p className={styles.finePrint}>
-          המידע במודעות נמסר על ידי המפרסמים ובאחריותם. לפני חתימה או תשלום יש
-          לבדוק את פרטי הדירה, זהות המפרסם ותנאי ההתקשרות. © 2026 Lobby.
-        </p>
+        <nav className="flex flex-wrap justify-center gap-6">
+          {footerLinks.map((item) => (
+            <Link key={item.href} href={item.href} className="transition hover:text-brand">
+              {item.label}
+            </Link>
+          ))}
+        </nav>
       </div>
     </footer>
   );

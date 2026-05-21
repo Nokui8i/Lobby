@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { LISTING_DESCRIPTION_MAX_CHARACTERS } from "@lobby/shared";
-import styles from "./page.module.css";
+import { cn } from "@/lib/utils";
 
 const DESCRIPTION_TOGGLE_THRESHOLD = 110;
 
@@ -12,17 +12,18 @@ export function DescriptionText({ text }: { text: string }) {
   const shouldShowToggle = description.length > DESCRIPTION_TOGGLE_THRESHOLD;
 
   return (
-    <div className={styles.descriptionWrap}>
+    <div>
       <p
-        className={`${styles.description} ${
-          !isExpanded && shouldShowToggle ? styles.descriptionCollapsed : ""
-        }`}
+        className={cn(
+          "m-0 text-[16px] font-normal leading-[1.75] text-graphite sm:text-[17px]",
+          !isExpanded && shouldShowToggle && "line-clamp-4",
+        )}
       >
         {description}
       </p>
       {shouldShowToggle ? (
         <button
-          className={styles.descriptionToggle}
+          className="mt-2 border-0 bg-transparent p-0 text-sm font-bold text-brand hover:underline"
           type="button"
           onClick={() => setIsExpanded((current) => !current)}
         >

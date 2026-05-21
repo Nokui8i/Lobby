@@ -1,5 +1,5 @@
 import { buildSupportInquiryThreadSystemLines, type SupportInquirySystemIntroInput } from "@lobby/shared";
-import styles from "../chat/chat.module.css";
+import { ChatSystemMessage } from "@/components/messaging/chat-ui";
 
 export function SupportInquirySystemMessages({ inquiry }: { inquiry: SupportInquirySystemIntroInput }) {
   const lines = buildSupportInquiryThreadSystemLines(inquiry);
@@ -7,9 +7,7 @@ export function SupportInquirySystemMessages({ inquiry }: { inquiry: SupportInqu
   return (
     <>
       {lines.map((text, index) => (
-        <div key={`${index}-${text.slice(0, 24)}`} className={styles.bubbleWrapSystem} role="status">
-          <p className={styles.bubbleSystem}>{text}</p>
-        </div>
+        <ChatSystemMessage key={`${index}-${text.slice(0, 24)}`}>{text}</ChatSystemMessage>
       ))}
     </>
   );

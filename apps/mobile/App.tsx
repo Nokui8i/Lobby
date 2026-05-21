@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, NativeScrollEvent, ScrollView, useWindowDimensions } from 'react-native';
+import { Alert, NativeScrollEvent, ScrollView } from 'react-native';
 import {
   buildSupportChatRouteId,
   DEFAULT_FEED_SORT_ID,
@@ -26,12 +26,7 @@ import { isMessagingNotificationKind } from '@lobby/shared';
 import { subscribeMyNotifications } from './lib/firebase/notifications';
 import { SavedListingsScreen } from './SavedListingsScreen';
 import { PublishListingScreen } from './PublishListingScreen';
-import {
-  BANNER_AUTO_SCROLL_MS,
-  INITIAL_VISIBLE_LISTINGS,
-  LISTINGS_LOAD_STEP,
-  lobbyBanners,
-} from './constants/homeFeed';
+import { INITIAL_VISIBLE_LISTINGS, LISTINGS_LOAD_STEP } from './constants/homeFeed';
 import { type ChatRoute, type FeedListing, type MainTab, createFirestoreFeed } from './navigation/types';
 import { ChatListView } from './screens/ChatListScreen';
 import { ChatThreadView } from './screens/ChatThreadScreen';
@@ -56,7 +51,6 @@ export default function App() {
   });
   const [chatRoute, setChatRoute] = useState<ChatRoute>(null);
   const [selectedListing, setSelectedListing] = useState<RentalListing | null>(null);
-  const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [feedListings, setFeedListings] = useState<FeedListing[]>([]);
   const [feedLoading, setFeedLoading] = useState(true);
   const [feedError, setFeedError] = useState(false);
@@ -75,10 +69,7 @@ export default function App() {
   const [contactListingId, setContactListingId] = useState<string | null>(null);
   const [savedOpen, setSavedOpen] = useState(false);
   const [notifUnread, setNotifUnread] = useState(0);
-  const bannerScrollRef = useRef<ScrollView | null>(null);
   const feedScrollRef = useRef<ScrollView | null>(null);
-  const { width } = useWindowDimensions();
-  const bannerWidth = width - 28;
 
   function handleMainTabPress(tab: MainTab) {
     setMainTab(tab);
@@ -145,11 +136,6 @@ export default function App() {
     ]);
   }
 
-  const handleBannerScroll = (event: { nativeEvent: NativeScrollEvent }) => {
-    const nextIndex = Math.round(event.nativeEvent.contentOffset.x / bannerWidth);
-    setActiveBannerIndex(Math.max(0, Math.min(lobbyBanners.length - 1, nextIndex)));
-  };
-
   const handleFeedScroll = (event: { nativeEvent: NativeScrollEvent }) => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
     const distanceFromBottom = contentSize.height - (contentOffset.y + layoutMeasurement.height);
@@ -211,23 +197,6 @@ export default function App() {
       cancelled = true;
     };
   }, [appliedFeedFilters, appliedFeedSort]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveBannerIndex((currentIndex) => {
-        const nextIndex = (currentIndex + 1) % lobbyBanners.length;
-
-        bannerScrollRef.current?.scrollTo({
-          x: nextIndex * bannerWidth,
-          animated: true,
-        });
-
-        return nextIndex;
-      });
-    }, BANNER_AUTO_SCROLL_MS);
-
-    return () => clearInterval(timer);
-  }, [bannerWidth]);
 
   useEffect(() => {
     if (!user || !isFirebaseConfigured()) {
@@ -307,6 +276,16 @@ export default function App() {
           setPublishOpen(false);
           setPublishEditListingId(null);
           setMainTab('home');
+        }}
+        onPublished={(listingId) => {
+          setPublishOpen(false);
+          setPublishEditListingId(null);
+          setMainTab('home');
+          void fetchListingByIdFromFirestore(listingId).then((listing) => {
+            if (listing) {
+              setSelectedListing(listing);
+            }
+          });
         }}
       />
     );
@@ -495,12 +474,9 @@ export default function App() {
       appliedFeedFilters={appliedFeedFilters}
       appliedFeedSort={appliedFeedSort}
       feedFilterSummary={feedFilterSummary}
-      activeBannerIndex={activeBannerIndex}
       mainTab={mainTab}
       messagesBadgeCount={messagesBadgeCount}
       filterModalVisible={filterModalVisible}
-      bannerWidth={bannerWidth}
-      bannerScrollRef={bannerScrollRef}
       feedScrollRef={feedScrollRef}
       openAuthModal={openAuthModal}
       requestSignOut={requestSignOut}
@@ -520,9 +496,17 @@ export default function App() {
         setFilterModalVisible(false);
       }}
       onMainTabPress={handleMainTabPress}
-      onBannerScroll={handleBannerScroll}
       onFeedScroll={handleFeedScroll}
       onAppliedFeedSortChange={setAppliedFeedSort}
+      onOpenPublish={() => {
+        if (authLoading || !isFirebaseConfigured()) return;
+        if (!user) {
+          openAuthModal();
+          return;
+        }
+        setMainTab('upload');
+        setPublishOpen(true);
+      }}
       onOpenFilterModal={() => {
         setFilterModalVisible(true);
         setMainTab('search');

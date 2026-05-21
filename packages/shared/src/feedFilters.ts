@@ -75,6 +75,33 @@ export function feedSearchFiltersFromRoomId(roomId: string): Pick<FeedSearchFilt
   return { minRooms: opt.minRooms, maxRooms: opt.maxRooms };
 }
 
+/** אפשרויות חדרים בפרסום — אותן תוויות כמו בסינון בפיד */
+export const LISTING_PUBLISH_ROOM_OPTIONS: FeedRoomFilterOption[] = FEED_ROOM_FILTER_OPTIONS.filter((o) => o.id !== "");
+
+/** ערך מספרי לשמירה במודעה */
+export function publishRoomsFromOptionId(roomId: string): number | null {
+  if (!roomId) {
+    return null;
+  }
+  if (roomId === "5+") {
+    return 5;
+  }
+  const n = Number(roomId);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/** מזהה אפשרות לטופס עריכה */
+export function publishRoomOptionIdFromRooms(rooms: number): string {
+  const standard = LISTING_PUBLISH_ROOM_OPTIONS.find((o) => publishRoomsFromOptionId(o.id) === rooms);
+  if (standard) {
+    return standard.id;
+  }
+  if (rooms >= 5) {
+    return String(rooms);
+  }
+  return "";
+}
+
 export function feedSearchFiltersIsActive(filters: FeedSearchFilters): boolean {
   return (
     filters.location != null ||

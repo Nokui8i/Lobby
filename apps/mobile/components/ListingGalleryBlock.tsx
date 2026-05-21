@@ -1,5 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import {
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { lobbyDesign } from "@lobby/shared";
+import { SaveListingButton } from "./SaveListingButton";
+
+const C = lobbyDesign.colors;
 
 function dedupeGalleryUrls(imageUrl: string, gallery: string[]): string[] {
   const raw = gallery.filter((u) => typeof u === "string" && u.trim().length > 0).map((u) => u.trim());
@@ -18,8 +31,6 @@ function dedupeGalleryUrls(imageUrl: string, gallery: string[]): string[] {
   return single ? [single] : [];
 }
 
-import { SaveListingButton } from "./SaveListingButton";
-
 export function ListingGalleryBlock({
   imageUrl,
   gallery,
@@ -33,10 +44,11 @@ export function ListingGalleryBlock({
   listingId: string;
   priceIls: number;
 }) {
-  const { height: winH } = useWindowDimensions();
+  const { height: winH, width: winW } = useWindowDimensions();
   const urls = useMemo(() => dedupeGalleryUrls(imageUrl, gallery), [imageUrl, gallery]);
   const [selected, setSelected] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const mainHeight = Math.round((winW - 28) * (8 / 16));
 
   useEffect(() => {
     setSelected((i) => (urls.length ? Math.min(Math.max(0, i), urls.length - 1) : 0));
@@ -67,7 +79,7 @@ export function ListingGalleryBlock({
 
   return (
     <View style={styles.shell}>
-      <View style={styles.mainWrap}>
+      <View style={[styles.mainWrap, { height: mainHeight }]}>
         <SaveListingButton
           listingId={listingId}
           listingTitle={title}
@@ -78,14 +90,14 @@ export function ListingGalleryBlock({
         />
         <Pressable
           onPress={() => openLightbox(selected)}
-          style={({ pressed }) => [styles.mainInner, pressed && styles.mainPressed]}
+          style={({ pressed }) => [styles.mainPressable, pressed && styles.mainPressed]}
           accessibilityRole="button"
           accessibilityLabel={`הגדלת תמונה ${selected + 1} מתוך ${urls.length}`}
         >
           <Image
             source={{ uri: current }}
             style={styles.mainImage}
-            resizeMode="contain"
+            resizeMode="cover"
             accessibilityLabel={`${title} — תמונה ${selected + 1}`}
           />
         </Pressable>
@@ -93,10 +105,10 @@ export function ListingGalleryBlock({
 
       {urls.length > 1 ? (
         <ScrollView
-          style={styles.thumbRail}
-          contentContainerStyle={styles.thumbRailContent}
-          showsVerticalScrollIndicator={false}
-          nestedScrollEnabled
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.thumbRow}
+          style={styles.thumbScroll}
         >
           {urls.map((uri, index) => (
             <Pressable
@@ -151,59 +163,63 @@ export function ListingGalleryBlock({
 
 const styles = StyleSheet.create({
   shell: {
-    flexDirection: "row-reverse",
-    alignItems: "stretch",
-    gap: 10,
-    minHeight: 280,
     marginBottom: 12,
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: C.border,
+    shadowColor: "rgba(15, 23, 42, 0.08)",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 2,
   },
   mainWrap: {
     position: "relative",
-    flex: 1,
-    minWidth: 0,
-    borderRadius: 28,
-    backgroundColor: "#ebe8e3",
+    width: "100%",
+    backgroundColor: "#f8f9fa",
     overflow: "hidden",
   },
   gallerySave: {
     position: "absolute",
-    top: 14,
-    left: 14,
+    top: 12,
+    left: 12,
     zIndex: 3,
   },
-  mainInner: {
+  mainPressable: {
     flex: 1,
-    minHeight: 260,
-    justifyContent: "center",
-    alignItems: "center",
+    width: "100%",
+    height: "100%",
   },
   mainPressed: {
-    opacity: 0.92,
+    opacity: 0.95,
   },
   mainImage: {
     width: "100%",
     height: "100%",
-    minHeight: 260,
   },
-  thumbRail: {
-    width: 84,
-    maxHeight: 280,
+  thumbScroll: {
+    flexGrow: 0,
   },
-  thumbRailContent: {
+  thumbRow: {
+    flexDirection: "row-reverse",
     gap: 8,
-    paddingVertical: 2,
+    padding: 12,
   },
   thumb: {
-    width: 76,
-    height: 76,
-    borderRadius: 16,
+    width: 112,
+    height: 80,
+    borderRadius: 12,
     overflow: "hidden",
     borderWidth: 2,
     borderColor: "transparent",
-    backgroundColor: "#dedad4",
+    opacity: 0.75,
+    backgroundColor: "#f8f9fa",
   },
   thumbSelected: {
-    borderColor: "#08b8c8",
+    borderColor: C.brand,
+    opacity: 1,
   },
   thumbImage: {
     width: "100%",
@@ -211,14 +227,16 @@ const styles = StyleSheet.create({
   },
   empty: {
     minHeight: 200,
-    borderRadius: 28,
-    backgroundColor: "#ebe8e3",
+    borderRadius: 16,
+    backgroundColor: "#f8f9fa",
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: C.border,
   },
   emptyText: {
-    color: "#5c6670",
-    fontWeight: "800",
+    color: "#64748b",
+    fontWeight: "600",
     fontSize: 15,
   },
   lightboxBackdrop: {

@@ -1,4 +1,4 @@
-import { StatusBar } from "expo-status-bar";
+﻿import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Image,
@@ -492,14 +492,14 @@ const styles = StyleSheet.create({
   topAction: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#101820",
+    color: "#202125",
     minWidth: 56,
     textAlign: "right",
   },
   topTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#101820",
+    color: "#202125",
   },
   topSpacer: {
     minWidth: 56,
@@ -522,15 +522,15 @@ const styles = StyleSheet.create({
   },
   tabOn: {
     borderColor: "rgba(8,184,200,0.35)",
-    backgroundColor: "#e8fbfd",
+    backgroundColor: "#e8f6fa",
   },
   tabText: {
     fontSize: 13,
     fontWeight: "800",
-    color: "#687076",
+    color: "#64748b",
   },
   tabTextOn: {
-    color: "#101820",
+    color: "#202125",
   },
   scroll: {
     flex: 1,
@@ -545,14 +545,14 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     fontSize: 15,
     fontWeight: "700",
-    color: "#687076",
+    color: "#64748b",
   },
   centerMuted: {
     textAlign: "center",
     marginTop: 24,
     fontSize: 15,
     fontWeight: "700",
-    color: "#687076",
+    color: "#64748b",
     paddingHorizontal: 20,
   },
   guestBody: {
@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
   primaryBtn: {
-    backgroundColor: "#101820",
+    backgroundColor: "#009DE0",
     borderRadius: 999,
     paddingVertical: 14,
     alignItems: "center",
@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
   menuDots: {
     fontSize: 20,
     fontWeight: "900",
-    color: "#687076",
+    color: "#64748b",
     lineHeight: 22,
   },
   menuBackdrop: {
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontSize: 16,
     fontWeight: "800",
-    color: "#101820",
+    color: "#202125",
     marginBottom: 12,
     paddingHorizontal: 4,
   },
@@ -630,7 +630,7 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontSize: 16,
     fontWeight: "700",
-    color: "#101820",
+    color: "#202125",
   },
   menuSheetItemDanger: {
     textAlign: "right",
@@ -646,7 +646,7 @@ const styles = StyleSheet.create({
   menuSheetCancelText: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#687076",
+    color: "#64748b",
   },
   confirmBackdrop: {
     flex: 1,
@@ -662,7 +662,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: "rgba(16,24,32,0.08)",
-    shadowColor: "#101820",
+    shadowColor: "#202125",
     shadowOpacity: 0.12,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 12 },
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontSize: 17,
     fontWeight: "800",
-    color: "#101820",
+    color: "#202125",
   },
   confirmBody: {
     marginTop: 10,
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     fontWeight: "600",
-    color: "#687076",
+    color: "#64748b",
   },
   confirmActions: {
     flexDirection: "row-reverse",
@@ -694,19 +694,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "rgba(16,24,32,0.12)",
-    backgroundColor: "#f7f6f2",
+    backgroundColor: "#ffffff",
   },
   confirmCancelText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#101820",
+    color: "#202125",
   },
   confirmPrimaryBtn: {
     flex: 1,
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: "center",
-    backgroundColor: "#08b8c8",
+    backgroundColor: "#009de0",
   },
   confirmPrimaryBtnFull: {
     flex: 1,
@@ -733,14 +733,14 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontSize: 15,
     fontWeight: "800",
-    color: "#101820",
+    color: "#202125",
   },
   cardMeta: {
     marginTop: 4,
     textAlign: "right",
     fontSize: 13,
     fontWeight: "600",
-    color: "#687076",
+    color: "#64748b",
   },
   pill: {
     marginTop: 8,
@@ -795,7 +795,7 @@ const styles = StyleSheet.create({
   moreLabel: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#101820",
+    color: "#202125",
   },
   moreSoon: {
     fontSize: 12,

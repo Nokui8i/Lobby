@@ -2,8 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { MessagingWorkspace } from "@/components/messaging/MessagingWorkspace";
 import { ChatListClient } from "./ChatListClient";
-import ws from "./chatWorkspace.module.css";
 
 function threadIdFromPath(pathname: string): string | null {
   const parts = pathname.split("/").filter(Boolean);
@@ -19,14 +19,13 @@ export function ChatWorkspace({ children }: { children: ReactNode }) {
   const threadOpen = Boolean(activeThreadId);
 
   return (
-    <main
-      className={`${ws.root} ${threadOpen ? ws.threadOpen : ""}`}
-      aria-label="הודעות"
+    <MessagingWorkspace
+      mainAriaLabel="הודעות"
+      listAriaLabel="רשימת שיחות"
+      threadOpen={threadOpen}
+      list={<ChatListClient activeThreadId={activeThreadId} />}
     >
-      <aside className={ws.listPane} aria-label="רשימת שיחות">
-        <ChatListClient activeThreadId={activeThreadId} />
-      </aside>
-      <section className={ws.threadPane}>{children}</section>
-    </main>
+      {children}
+    </MessagingWorkspace>
   );
 }

@@ -44,6 +44,8 @@ export interface ListingPublisher {
   id: string;
   displayName: string;
   responseTimeLabel: string;
+  /** טלפון ליצירת קשר — מוצג במודעה */
+  contactPhone?: string;
 }
 
 export const LISTING_MEDIA_LIMITS = {
@@ -51,6 +53,11 @@ export const LISTING_MEDIA_LIMITS = {
   maxVideos: 1,
   maxVideoDurationSeconds: 60,
 } as const;
+
+/** יחס מסגרת תמונה בכרטיס פיד (עמוד ראשי) — נמוך ואופקי */
+export const LISTING_CARD_IMAGE_ASPECT_RATIO = 16 / 9;
+
+export const LISTING_CARD_IMAGE_ASPECT_LABEL_HE = "16:9";
 
 export const LISTING_DESCRIPTION_MAX_CHARACTERS = 300;
 

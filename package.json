@@ -10,8 +10,12 @@
     "packages/shared"
   ],
   "scripts": {
+    "dev": "npm run web:dev",
+    "dev:web": "npm run web:dev",
     "web:dev": "npm --prefix apps/web run dev",
+    "dev:admin": "npm run admin:dev",
     "admin:dev": "npm --prefix apps/admin run dev",
+    "dev:mobile": "npm run mobile:start",
     "firebase:set-staff-claim": "npm --prefix firebase/tools run set-staff-claim --",
     "web:build": "npm --prefix apps/web run build",
     "web:lint": "npm --prefix apps/web run lint",
@@ -23,11 +27,11 @@
     "locations:import-neighborhoods": "node scripts/import-neighborhoods-seed.mjs",
     "locations:merge-neighborhoods": "node scripts/merge-neighborhood-supplement.mjs && npm run locations:build",
     "firebase:seed-dev-listing": "npm --prefix firebase/tools run seed:dev-listing",
-    "firebase:seed-admin-demo": "npm --prefix firebase/tools run seed:admin-demo",
     "firebase:delete-dev-listing": "npm --prefix firebase/tools run delete:dev-listing",
     "firebase:sync-google-services": "node -e \"require('fs').rmSync('apps/mobile/google-services.json',{force:true})\" && npx firebase-tools@latest apps:sdkconfig ANDROID 1:236687073343:android:0d512b2a94e11e3955d88a --project lobby-rental-platform -o apps/mobile/google-services.json",
     "firebase:print-web-config": "npx firebase-tools@latest apps:sdkconfig WEB 1:236687073343:web:226bcb04ec663c8f55d88a --project lobby-rental-platform",
     "firebase:deploy": "npx firebase-tools@latest deploy --project lobby-rental-platform --config firebase/firebase.json --only firestore:rules,firestore:indexes,storage,functions",
+    "firebase:deploy-storage": "npx firebase-tools@latest deploy --project lobby-rental-platform --config firebase/firebase.json --only storage",
     "mobile:eas-init": "npm --prefix apps/mobile exec -- eas init",
     "test": "npm --prefix packages/shared run test",
     "test:watch": "npm --prefix packages/shared run test:watch"

@@ -7,9 +7,17 @@ import {
   createOptimisticMessageId,
   formatChatMessageTime,
   formatLobbySendError,
-  isComposerSendKey,
   logLobbyError,
 } from "@lobby/shared";
+import {
+  ChatComposer,
+  ChatGate,
+  ChatMessageArea,
+  ChatMessageBubble,
+  ChatPanelShell,
+  ChatThreadHeader,
+} from "@/components/messaging/chat-ui";
+import { Button } from "@/components/ui/button";
 import { useLobbyAuth } from "@/contexts/LobbyAuthContext";
 import {
   getChatThreadIfParticipant,
@@ -22,11 +30,14 @@ import {
 import { getFirestoreDb, ensureFirestoreAuthReady } from "@/lib/firebase/client";
 import { isFirebaseConfigured } from "@/lib/firebase/isConfigured";
 import { mergeServerMessagesWithPending, pruneAcknowledgedPending } from "@/lib/mergePendingMessages";
-import styles from "./chat.module.css";
+import { scrollThreadToBottom } from "@/lib/messaging/scrollThreadToBottom";
 
 interface ChatThreadClientProps {
   threadId: string;
 }
+
+const CHAT_LEGAL_NOTICE =
+  "השיחות לתיאום סביב המודעה בלבד. Lobby אינה צד לעסקה, אינה מנטרת הודעות בזמן אמת ואינה אחראית לתוכן שמועבר בין משתמשים. אל תעבירו מידע רגיש או כספים ללא וידוא זהות.";
 
 export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
   const { user, loading, openAuthModal } = useLobbyAuth();
@@ -47,8 +58,8 @@ export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
     }
 
     setThread(undefined);
-      setMessages([]);
-      setPendingMessages([]);
+    setMessages([]);
+    setPendingMessages([]);
 
     let unsubscribeMessages: (() => void) | undefined;
     let cancelled = false;
@@ -106,7 +117,7 @@ export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
     const nearBottom = distanceFromBottom < 160;
 
     if (nearBottom || last?.senderId === user?.uid) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      scrollThreadToBottom(el, messagesEndRef.current, "smooth");
     }
   }, [displayMessages, user?.uid]);
 
@@ -154,127 +165,65 @@ export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
     }
   }
 
-  if (!isFirebaseConfigured()) {
+  if (thread === undefined && user && isFirebaseConfigured()) {
     return (
-      <div className={`${styles.threadShell} ${styles.threadShellSimple}`} role="region" aria-label="שיחה">
-        <p className={styles.muted}>אין חיבור ל־Firebase.</p>
-        <Link href="/chat" className={styles.backLink}>
-          לרשימה
-        </Link>
-      </div>
+      <ChatPanelShell className="items-center justify-center" role="region" aria-label="שיחה">
+        <p className="text-muted-foreground text-sm">טוען שיחה…</p>
+      </ChatPanelShell>
     );
   }
 
-  if (loading) {
+  if (thread === null && user && isFirebaseConfigured()) {
     return (
-      <div className={`${styles.threadShell} ${styles.threadShellSimple}`} role="region" aria-label="שיחה">
-        <p className={styles.muted}>טוען…</p>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className={`${styles.threadShell} ${styles.threadShellSimple}`} role="region" aria-label="שיחה">
-        <div className={styles.threadToolbar}>
-          <Link href="/chat" className={styles.backLink}>
-            לרשימה
-          </Link>
-          <h1>שיחה</h1>
-        </div>
-        <p className={styles.threadShellSimpleText}>התחברו כדי לצפות בשיחה.</p>
-        <button type="button" className={styles.ctaButton} onClick={openAuthModal}>
-          כניסה
-        </button>
-      </div>
-    );
-  }
-
-  if (thread === undefined) {
-    return (
-      <div className={`${styles.threadShell} ${styles.threadShellSimple}`} role="region" aria-label="שיחה">
-        <p className={styles.muted}>טוען שיחה…</p>
-      </div>
-    );
-  }
-
-  if (thread === null) {
-    return (
-      <div className={`${styles.threadShell} ${styles.threadShellSimple}`} role="region" aria-label="שיחה">
-        <p>אין גישה לשיחה הזאת.</p>
-        <Link href="/chat" className={styles.backLink}>
-          חזרה להודעות
-        </Link>
-      </div>
+      <ChatPanelShell className="items-center justify-center gap-3 p-8 text-center" role="region" aria-label="שיחה">
+        <p className="text-sm">אין גישה לשיחה הזאת.</p>
+        <Button variant="outline" asChild>
+          <Link href="/chat">חזרה להודעות</Link>
+        </Button>
+      </ChatPanelShell>
     );
   }
 
   return (
-    <div className={styles.threadShell} role="region" aria-label="שיחה">
-      <div className={styles.threadToolbar}>
-        <Link href="/chat" className={styles.backLink}>
-          לרשימה
-        </Link>
-        <h1>צ׳אט</h1>
-      </div>
-
-      <p className={styles.threadMeta}>{thread.listingTitle}</p>
-
-      <div ref={messagesScrollRef} className={styles.messagesScroll}>
-        <div className={styles.messagesInner}>
-          {displayMessages.map((message) => {
-            const mine = message.senderId === user.uid;
-            const timeLabel = formatChatMessageTime(message.createdAt);
-            return (
-              <div
-                key={message.id}
-                className={`${styles.bubbleWrap} ${mine ? styles.bubbleWrapMine : styles.bubbleWrapOther}`}
-              >
-                <div className={`${styles.bubble} ${mine ? styles.bubbleMine : styles.bubbleOther}`}>
-                  {message.text}
-                </div>
-                {timeLabel ? <span className={styles.bubbleTime}>{timeLabel}</span> : null}
-              </div>
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      <div className={styles.composerSticky}>
-        <p className={styles.chatLegalNotice}>
-          השיחות לתיאום סביב המודעה בלבד. Lobby אינה צד לעסקה, אינה מנטרת הודעות בזמן אמת ואינה אחראית לתוכן
-          שמועבר בין משתמשים. אל תעבירו מידע רגיש או כספים ללא וידוא זהות.
-        </p>
-        {sendError ? <p className={styles.sendError}>{sendError}</p> : null}
-        <div className={styles.composer}>
-          <textarea
-            value={draft}
-            maxLength={CHAT_MESSAGE_MAX_LENGTH}
-            placeholder="כתבו הודעה…"
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.nativeEvent.isComposing) {
-                return;
-              }
-              if (isComposerSendKey(event.key, event.shiftKey)) {
-                event.preventDefault();
-                void handleSend();
-              }
-            }}
-            rows={2}
-            dir="rtl"
+    <ChatGate
+      firebaseMissing={!isFirebaseConfigured()}
+      loading={loading}
+      needsAuth={!user}
+      onAuth={openAuthModal}
+      message="התחברו כדי לצפות בשיחה."
+    >
+      {thread ? (
+        <ChatPanelShell role="region" aria-label="שיחה">
+          <ChatThreadHeader
+            backHref="/chat"
+            title={thread.listingTitle || "שיחה"}
+            subtitle="צ׳אט סביב המודעה"
           />
-          <button
-            type="button"
-            className={styles.send}
-            disabled={sending || !draft.trim()}
-            onClick={() => void handleSend()}
-          >
-            שליחה
-          </button>
-        </div>
-      </div>
-    </div>
+
+          <ChatMessageArea scrollRef={messagesScrollRef}>
+            {displayMessages.map((message) => {
+              const mine = message.senderId === user?.uid;
+              const timeLabel = formatChatMessageTime(message.createdAt);
+              return (
+                <ChatMessageBubble key={message.id} mine={Boolean(mine)} timeLabel={timeLabel || undefined}>
+                  {message.text}
+                </ChatMessageBubble>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </ChatMessageArea>
+
+          <ChatComposer
+            value={draft}
+            onChange={setDraft}
+            onSend={() => void handleSend()}
+            sending={sending}
+            maxLength={CHAT_MESSAGE_MAX_LENGTH}
+            error={sendError}
+            notice={CHAT_LEGAL_NOTICE}
+          />
+        </ChatPanelShell>
+      ) : null}
+    </ChatGate>
   );
 }

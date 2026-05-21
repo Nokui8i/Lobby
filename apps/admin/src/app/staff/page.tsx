@@ -15,8 +15,8 @@ import {
   revokeAdminStaffRole,
   setAdminStaffRole,
 } from "@/lib/firebase/functions";
-import reportStyles from "../reports/reports.module.css";
-import userStyles from "../users/users.module.css";
+import { ap, up } from "@/lib/admin-page-classes";
+import { cn } from "@/lib/utils";
 
 type PendingStaffAction =
   | { type: "set_role"; user: AdminUserRecord; role: AssignableStaffRole }
@@ -95,63 +95,63 @@ export default function AdminStaffPage() {
 
   if (!canAccess) {
     return (
-      <div className={userStyles.page}>
-        <p className={userStyles.noAccess}>רק בעלים יכול לנהל את צוות המערכת.</p>
+      <div className={up.page}>
+        <p className={up.noAccess}>רק בעלים יכול לנהל את צוות המערכת.</p>
       </div>
     );
   }
 
   return (
-    <div className={userStyles.page}>
-      <header className={reportStyles.header}>
+    <div className={up.page}>
+      <header className={ap.header}>
         <div>
-          <Link href="/" className={reportStyles.back}>
+          <Link href="/" className={ap.back}>
             ← לוח בקרה
           </Link>
           <h1>צוות המערכת</h1>
-          <p className={reportStyles.sub}>
+          <p className={ap.sub}>
             הקצאת עובד או מנהל — חפשו לקוח בעמוד «לקוחות» והוסיפו לצוות, או נהלו כאן.
           </p>
         </div>
-        <button type="button" className={reportStyles.refreshBtn} disabled={loading} onClick={() => void load()}>
+        <button type="button" className={ap.refreshBtn} disabled={loading} onClick={() => void load()}>
           רענון
         </button>
       </header>
 
-      <p className={userStyles.meta}>
+      <p className={up.meta}>
         <Link href="/users">← חיפוש לקוח להוספה לצוות</Link>
       </p>
 
       {toast ? (
         <p
-          className={toast.kind === "ok" ? userStyles.toast : `${userStyles.toast} ${userStyles.toastError}`}
+          className={cn(up.toast, toast.kind === "err" && up.toastError)}
           role="status"
         >
           {toast.text}
         </p>
       ) : null}
 
-      {error ? <p className={reportStyles.error}>שגיאה בטעינה.</p> : null}
-      {loading ? <p className={reportStyles.empty}>טוען…</p> : null}
-      {!loading && staff.length === 0 ? <p className={reportStyles.empty}>אין עדיין צוות מוגדר.</p> : null}
+      {error ? <p className={ap.error}>שגיאה בטעינה.</p> : null}
+      {loading ? <p className={ap.empty}>טוען…</p> : null}
+      {!loading && staff.length === 0 ? <p className={ap.empty}>אין עדיין צוות מוגדר.</p> : null}
 
-      <ul className={reportStyles.list}>
+      <ul className={ap.list}>
         {staff.map((member) => {
           const role = member.staffRole ?? "moderator";
           const isOwner = role === "owner";
           const isSelf = me?.uid === member.id;
           const isProtected = isOwner || isSelf;
           return (
-            <li key={member.id} className={reportStyles.item}>
-              <div className={reportStyles.itemTop}>
+            <li key={member.id} className={ap.item}>
+              <div className={ap.itemTop}>
                 <div>
-                  <span className={userStyles.staffBadge}>{STAFF_ROLE_LABELS[role]}</span>
-                  <h2>{member.displayName}</h2>
-                  <p className={reportStyles.listingTitle}>{member.email ?? member.id}</p>
+                  <span className={up.staffBadge}>{STAFF_ROLE_LABELS[role]}</span>
+                  <h2 className="text-base font-semibold">{member.displayName}</h2>
+                  <p className={ap.listingSubtitle}>{member.email ?? member.id}</p>
                 </div>
               </div>
               {!isProtected ? (
-                <div className={reportStyles.actions}>
+                <div className={ap.rowActions}>
                   {role !== "moderator" ? (
                     <button
                       type="button"
@@ -172,7 +172,7 @@ export default function AdminStaffPage() {
                   ) : null}
                   <button
                     type="button"
-                    className={userStyles.dangerBtn}
+                    className={up.dangerBtn}
                     disabled={busyId === member.id}
                     onClick={() => setPending({ type: "revoke", user: member })}
                   >
@@ -180,7 +180,7 @@ export default function AdminStaffPage() {
                   </button>
                 </div>
               ) : (
-                <p className={userStyles.meta}>
+                <p className={up.meta}>
                   {isSelf
                     ? "זה החשבון שלך — לא ניתן לשנות את התפקיד שלך מהממשק."
                     : "תפקיד בעלים — לא ניתן לשנות בממשק."}

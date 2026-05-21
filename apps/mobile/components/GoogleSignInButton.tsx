@@ -1,4 +1,4 @@
-import * as Google from "expo-auth-session/providers/google";
+﻿import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
@@ -148,7 +148,7 @@ function GoogleSignInButtonLoaded({
       }}
     >
       <View style={styles.googleInner}>
-        {showSpinner ? <ActivityIndicator color="#101820" /> : <Text style={styles.googleText}>{label}</Text>}
+        {showSpinner ? <ActivityIndicator color="#202125" /> : <Text style={styles.googleText}>{label}</Text>}
       </View>
     </Pressable>
   );
@@ -174,6 +174,6 @@ const styles = StyleSheet.create({
   googleText: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#101820",
+    color: "#202125",
   },
 });

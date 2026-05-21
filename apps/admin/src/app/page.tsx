@@ -6,7 +6,9 @@ import { useCallback, useEffect, useState } from "react";
 import type { AdminDashboardStats } from "@lobby/shared";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { fetchAdminDashboardStats } from "@/lib/firebase/functions";
-import styles from "./dashboard.module.css";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 type DashCard = {
   key: string;
@@ -37,14 +39,10 @@ export default function AdminDashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (staffRole) {
-      void load();
-    }
+    if (staffRole) void load();
   }, [staffRole, load]);
 
-  if (!staffRole) {
-    return null;
-  }
+  if (!staffRole) return null;
 
   const cards: DashCard[] = [
     {
@@ -52,89 +50,76 @@ export default function AdminDashboardPage() {
       title: "דיווחים",
       href: "/reports",
       enabled: staffCanAccessNav(staffRole, "reports"),
-      lines: [
-        {
-          label: "דיווחים פתוחים",
-          value: loading ? "…" : error ? "—" : (stats?.openReports ?? 0),
-        },
-      ],
+      lines: [{ label: "דיווחים פתוחים", value: loading ? "…" : error ? "—" : (stats?.openReports ?? 0) }],
     },
     {
       key: "listings",
       title: "מודעות פעילות",
       enabled: true,
-      lines: [
-        {
-          label: "גלויות בלוח כרגע",
-          value: loading ? "…" : error ? "—" : (stats?.activeListings ?? 0),
-        },
-      ],
+      lines: [{ label: "גלויות בלוח כרגע", value: loading ? "…" : error ? "—" : (stats?.activeListings ?? 0) }],
     },
     {
       key: "inquiries",
       title: "פניות",
       href: "/inquiries",
       enabled: staffCanAccessNav(staffRole, "inquiries"),
-      lines: [
-        {
-          label: "פתוחות לטיפול",
-          value: loading ? "…" : error ? "—" : (stats?.openInquiries ?? 0),
-        },
-      ],
+      lines: [{ label: "פתוחות לטיפול", value: loading ? "…" : error ? "—" : (stats?.openInquiries ?? 0) }],
     },
   ];
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1>לוח בקרה</h1>
-          <p className={styles.welcome}>
+          <h1 className="font-display text-3xl tracking-tight">לוח בקרה</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
             שלום{user?.email ? `, ${user.email}` : ""} · {staffRoleLabel}
           </p>
         </div>
-        <button type="button" className={styles.refreshBtn} disabled={loading} onClick={() => void load()}>
+        <Button type="button" variant="outline" disabled={loading} onClick={() => void load()}>
           רענון
-        </button>
+        </Button>
       </header>
 
       {error ? (
-        <p className={styles.error} role="alert">
+        <p className="text-destructive bg-destructive/10 rounded-lg border px-4 py-3 text-sm" role="alert">
           לא הצלחנו לטעון נתונים. ודאו ש־Cloud Functions מפורסמות ונסו שוב.
         </p>
       ) : null}
 
-      <div className={styles.grid}>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards
           .filter((c) => c.enabled)
           .map((card) => {
-            const body = (
-              <>
-                <h2>{card.title}</h2>
-                <div className={styles.metrics}>
+            const inner = (
+              <Card
+                className={cn(
+                  "h-full transition-shadow",
+                  card.href && "hover:border-primary/40 hover:shadow-md",
+                )}
+              >
+                <CardHeader className="pb-2">
+                  <CardTitle>{card.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
                   {card.lines.map((line) => (
-                    <div key={line.label} className={styles.metricRow}>
-                      <span className={styles.metricValue}>{line.value}</span>
-                      <span className={styles.metricLabel}>{line.label}</span>
+                    <div key={line.label} className="space-y-1">
+                      <p className="text-primary text-3xl font-bold tracking-tight">{line.value}</p>
+                      <p className="text-muted-foreground text-sm">{line.label}</p>
                     </div>
                   ))}
-                </div>
-              </>
+                </CardContent>
+              </Card>
             );
 
             if (card.href) {
               return (
-                <Link key={card.key} href={card.href} className={styles.card}>
-                  {body}
+                <Link key={card.key} href={card.href} className="block h-full">
+                  {inner}
                 </Link>
               );
             }
-
-            return (
-              <article key={card.key} className={`${styles.card} ${styles.cardStat}`}>
-                {body}
-              </article>
-            );
+            return <div key={card.key}>{inner}</div>;
           })}
       </div>
     </div>

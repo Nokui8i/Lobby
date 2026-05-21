@@ -1,10 +1,11 @@
-import styles from "./inquiriesChat.module.css";
+import { ic } from "@/lib/admin-page-classes";
+import { cn } from "@/lib/utils";
 
 export default function InquiriesIndexPage() {
   return (
-    <div className={styles.placeholder}>
-      <p style={{ margin: 0, fontWeight: 800, fontSize: 18, color: "#101820" }}>בחרו פנייה מהרשימה</p>
-      <p style={{ margin: "8px 0 0", maxWidth: 320, lineHeight: 1.5 }}>
+    <div className={ic.placeholder}>
+      <p className="m-0 text-lg font-extrabold text-foreground">בחרו פנייה מהרשימה</p>
+      <p className="mt-2 max-w-xs leading-relaxed">
         כמו בצ׳אט — רשימה משמאל, שיחה מימין. כרטיס פתיחה מופיע בתחילת כל שיחה.
       </p>
     </div>

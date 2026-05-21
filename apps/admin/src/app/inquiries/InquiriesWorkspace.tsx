@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { InquiriesListClient } from "./InquiriesListClient";
-import ws from "./inquiriesWorkspace.module.css";
+import { cn } from "@/lib/utils";
 
 function inquiryIdFromPath(pathname: string): string | null {
   const parts = pathname.split("/").filter(Boolean);
@@ -19,15 +19,15 @@ export function InquiriesWorkspace({ children }: { children: ReactNode }) {
   const threadOpen = Boolean(activeInquiryId);
 
   return (
-    <div className={ws.fill}>
+    <div className={"flex min-h-0 flex-1 flex-col"}>
       <main
-        className={`${ws.root} ${threadOpen ? ws.threadOpen : ""}`}
+        className={cn("grid min-h-0 flex-1 w-full grid-cols-1 bg-card min-[960px]:grid-cols-[minmax(300px,34%)_minmax(0,1fr)]")}
         aria-label="פניות תמיכה"
       >
-        <aside className={ws.listPane} aria-label="רשימת פניות">
+        <aside className={cn("flex min-h-0 flex-col border-b border-border min-[960px]:border-b-0 min-[960px]:border-e", threadOpen && "max-[959px]:hidden")} aria-label="רשימת פניות">
           <InquiriesListClient activeInquiryId={activeInquiryId} />
         </aside>
-        <section className={ws.threadPane}>{children}</section>
+        <section className={"flex min-h-0 flex-col flex-1 bg-card"}>{children}</section>
       </main>
     </div>
   );

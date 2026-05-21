@@ -185,7 +185,7 @@ export function ContactScreen({
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f7f6f2" },
+  safe: { flex: 1, backgroundColor: "#ffffff" },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -212,12 +212,12 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "rgba(16,24,32,0.06)",
   },
-  chipOn: { backgroundColor: "#101820" },
+  chipOn: { backgroundColor: "#009DE0" },
   chipText: { fontSize: 13, fontWeight: "700" },
   chipTextOn: { color: "#fff" },
   primaryBtn: {
     marginTop: 16,
-    backgroundColor: "#101820",
+    backgroundColor: "#009DE0",
     borderRadius: 999,
     paddingVertical: 14,
     alignItems: "center",

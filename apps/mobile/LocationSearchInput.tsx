@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import {
   groupLocationSuggestionsByKind,
-  LOCATION_STREET_SECTION_NOTICE_HE,
   locationSuggestionDisplaySubtitle,
   locationSuggestionDisplayTitle,
   resolvedLocationDisplayLine,
@@ -193,9 +192,6 @@ export function LocationSearchInput({
                 <View key={group.kind}>
                   <View style={styles.sectionHeader}>
                     <Text style={styles.sectionHeaderLabel}>{group.label}</Text>
-                    {group.kind === "street" && variant === "feed" ? (
-                      <Text style={styles.sectionHeaderNote}>{LOCATION_STREET_SECTION_NOTICE_HE}</Text>
-                    ) : null}
                   </View>
                   {group.items.map((item) => {
                     const subtitle = locationSuggestionDisplaySubtitle(item);
@@ -266,12 +262,12 @@ const styles = StyleSheet.create({
   selectedTitle: {
     textAlign: "right",
     fontWeight: "800",
-    color: "#101820",
+    color: "#202125",
   },
   selectedMeta: {
     marginTop: 4,
     textAlign: "right",
-    color: "#687076",
+    color: "#64748b",
     fontSize: 13,
   },
   clear: {
@@ -299,15 +295,7 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontSize: 13,
     fontWeight: "800",
-    color: "#687076",
-  },
-  sectionHeaderNote: {
-    marginTop: 4,
-    textAlign: "right",
-    fontSize: 11,
-    lineHeight: 16,
-    fontWeight: "600",
-    color: "#8a9399",
+    color: "#64748b",
   },
   option: {
     paddingHorizontal: 12,
@@ -318,24 +306,24 @@ const styles = StyleSheet.create({
   optionTitle: {
     textAlign: "right",
     fontWeight: "800",
-    color: "#101820",
+    color: "#202125",
   },
   optionMeta: {
     textAlign: "right",
-    color: "#687076",
+    color: "#64748b",
     fontSize: 13,
     marginTop: 2,
   },
   loading: {
     padding: 12,
     textAlign: "right",
-    color: "#687076",
+    color: "#64748b",
   },
   hint: {
     marginTop: 6,
     textAlign: "right",
     fontSize: 12,
-    color: "#687076",
+    color: "#64748b",
   },
   error: {
     marginTop: 6,
@@ -348,7 +336,7 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontSize: 11,
     lineHeight: 16,
-    color: "#687076",
+    color: "#64748b",
     paddingHorizontal: 4,
   },
 });

@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+﻿import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export function LobbyConfirmModal({
   visible,
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#101820",
+    color: "#202125",
     textAlign: "right",
   },
   body: {
@@ -90,13 +90,13 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontWeight: "800",
-    color: "#101820",
+    color: "#202125",
   },
   confirmBtn: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: "#08b8c8",
+    backgroundColor: "#009de0",
     alignItems: "center",
   },
   confirmDanger: {

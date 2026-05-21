@@ -117,10 +117,12 @@ export function listingFromFirestorePayload(
 
   const publisherRecord = publisherRaw as Record<string, unknown>;
   const publisherIdField = asString(data.publisherId);
+  const contactPhoneRaw = asString(publisherRecord.contactPhone, "");
   const publisher = {
     id: publisherIdField || asString(publisherRecord.id, "unknown"),
     displayName: asString(publisherRecord.displayName, "—"),
     responseTimeLabel: asString(publisherRecord.responseTimeLabel, "—"),
+    ...(contactPhoneRaw ? { contactPhone: contactPhoneRaw } : {}),
   };
 
   const statusValue = asString(data.status, "draft");
