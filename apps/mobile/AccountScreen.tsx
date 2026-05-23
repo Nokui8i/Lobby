@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import {
   formatListingLocationLine,
-  LISTING_OWNER_ACTION_BOOST_INFO_HE,
   LISTING_OWNER_ACTION_CONFIRM_HE,
   LISTING_OWNER_ACTION_LABEL_HE,
   LISTING_STATUS_LABEL_HE,
@@ -198,16 +197,6 @@ export function AccountScreen({
         onEditListing(listing.id);
         return;
       }
-      if (action === "boost") {
-        setActionDialog({
-          kind: "info",
-          title: LISTING_OWNER_ACTION_BOOST_INFO_HE.title,
-          body: LISTING_OWNER_ACTION_BOOST_INFO_HE.body,
-          confirmLabel: LISTING_OWNER_ACTION_BOOST_INFO_HE.confirmLabel ?? "הבנתי",
-        });
-        return;
-      }
-
       const confirmCopy = LISTING_OWNER_ACTION_CONFIRM_HE[action];
       if (confirmCopy) {
         setActionDialog({
@@ -394,7 +383,7 @@ export function AccountScreen({
           ) : null}
         </Pressable>
         <Pressable style={styles.moreRow} onPress={onOpenSettings} accessibilityRole="button">
-          <Text style={styles.moreLabel}>הגדרות</Text>
+          <Text style={styles.moreLabel}>הגדרות חשבון</Text>
         </Pressable>
       </ScrollView>
 

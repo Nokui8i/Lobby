@@ -144,6 +144,17 @@ export function listingMatchesFeedSearchFilters(
   return true;
 }
 
+/** סינון סופי לפיד — כולל דמו ומודעות ללא placeId */
+export function applyFeedSearchFilters(
+  listings: RentalListing[],
+  filters: FeedSearchFilters,
+): RentalListing[] {
+  if (!feedSearchFiltersIsActive(filters)) {
+    return listings;
+  }
+  return listings.filter((listing) => listingMatchesFeedSearchFilters(listing, filters));
+}
+
 export type FeedSortId = "newest" | "price_asc" | "price_desc";
 
 export const DEFAULT_FEED_SORT_ID: FeedSortId = "newest";

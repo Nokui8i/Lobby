@@ -79,7 +79,7 @@ export function AuthToolbar() {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/chat" className="flex w-full items-center justify-between">
+            <Link href="/account/messages" className="flex w-full items-center justify-between">
               הודעות
               {msgCount > 0 ? <Badge variant="secondary">{unreadLabel(msgCount)}</Badge> : null}
             </Link>

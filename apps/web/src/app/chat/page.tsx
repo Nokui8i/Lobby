@@ -1,5 +1,7 @@
-import { ChatEmptyThread } from "@/components/messaging/chat-ui";
+import { redirect } from "next/navigation";
+import { accountMessagesIndexPath } from "@lobby/shared";
 
-export default function ChatIndexPlaceholder() {
-  return <ChatEmptyThread />;
+/** הפניה מנתיב ישן — כפתור ההדר והקישורים הישנים */
+export default function ChatLegacyIndexRedirect() {
+  redirect(accountMessagesIndexPath());
 }

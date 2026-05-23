@@ -1012,15 +1012,6 @@ export const appStyles = StyleSheet.create({
     backgroundColor: '#fafafa',
     color: C.foreground,
   },
-  chatLegalNoticeMobile: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    textAlign: 'right',
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#74767e',
-    lineHeight: 17,
-  },
   chatListScroll: {
     flex: 1,
   },

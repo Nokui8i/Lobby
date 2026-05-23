@@ -5,6 +5,9 @@ export const LISTING_FEED_GRID_CLASS =
 /** תמונה 16:9 — כרטיס נמוך בפיד */
 export const LISTING_CARD_IMAGE_ASPECT_CLASS = "aspect-video";
 
+/** ספוטלייט — שני כרטיסים גדולים בשורה */
+export const LISTING_CARD_FEATURED_IMAGE_ASPECT_CLASS = "aspect-[5/4] sm:aspect-[4/3]";
+
 /** פיד: מילוי אחיד של המסגרת */
 export const LISTING_CARD_IMAGE_OBJECT_CLASS = "object-cover object-center";
 

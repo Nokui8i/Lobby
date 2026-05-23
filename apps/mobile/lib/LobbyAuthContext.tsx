@@ -15,7 +15,7 @@ import { getFirebaseAuth } from "./firebase/client";
 import { isLobbyUserBanned } from "./firebase/authBanCheck";
 import { ensureUserDocument } from "./firebase/ensureUserDocument";
 import { isFirebaseConfigured } from "./firebase/isConfigured";
-import { fetchUserProfileDisplayName } from "./firebase/userProfile";
+import { fetchUserProfileDisplayName, updateUserDisplayName } from "./firebase/userProfile";
 
 export type GoogleAuthMobileResult = "closed" | "needs_display_name" | "already_registered";
 
@@ -24,6 +24,7 @@ interface LobbyAuthContextValue {
   displayNameForUi: string;
   loading: boolean;
   signOutUser: () => Promise<void>;
+  updateDisplayName: (displayName: string) => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, displayName: string) => Promise<void>;
   signInWithGoogleIdToken: (
@@ -102,6 +103,22 @@ export function LobbyAuthProvider({ children }: { children: ReactNode }) {
 
     await signOut(getFirebaseAuth());
   }, []);
+
+  const updateDisplayName = useCallback(
+    async (displayName: string) => {
+      if (!isFirebaseConfigured()) {
+        throw new Error("Firebase is not configured.");
+      }
+      const auth = getFirebaseAuth();
+      const current = auth.currentUser;
+      if (!current) {
+        throw new Error("Not signed in.");
+      }
+      await updateUserDisplayName(current, displayName);
+      await refreshProfileDisplayName(current);
+    },
+    [refreshProfileDisplayName],
+  );
 
   const abandonPendingGoogleProfile = useCallback(async () => {
     const token = pendingGoogleIdTokenRef.current;
@@ -352,6 +369,7 @@ export function LobbyAuthProvider({ children }: { children: ReactNode }) {
       displayNameForUi,
       loading,
       signOutUser,
+      updateDisplayName,
       signInWithEmail,
       signUpWithEmail,
       signInWithGoogleIdToken,
@@ -366,6 +384,7 @@ export function LobbyAuthProvider({ children }: { children: ReactNode }) {
       displayNameForUi,
       loading,
       signOutUser,
+      updateDisplayName,
       signInWithEmail,
       signUpWithEmail,
       signInWithGoogleIdToken,

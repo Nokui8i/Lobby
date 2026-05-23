@@ -37,6 +37,10 @@
   --ring: var(--brand);
   --radius: 1rem;
   --header-height: 3.75rem;
+  --popover: #ffffff;
+  --popover-foreground: var(--brand-dark);
+  --accent: var(--surface-soft);
+  --accent-foreground: var(--brand-dark);
 }
 
 @theme inline {
@@ -46,6 +50,10 @@
   --color-border: var(--border);
   --color-ring: var(--ring);
   --color-brand: var(--brand);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
 }
 
 @layer base {
@@ -166,5 +174,284 @@
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  /* Home feature banners — Spline-like 3D motion */
+  .feature-3d-stage {
+    transform-style: preserve-3d;
+  }
+  .feature-3d-tilt {
+    transition: transform 0.14s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-style: preserve-3d;
+  }
+  .feature-banner-card:hover .feature-3d-tilt {
+    transition-duration: 0.08s;
+  }
+  @keyframes feature-float-a {
+    0%,
+    100% {
+      transform: translate(0, 0) rotate(-12deg);
+    }
+    50% {
+      transform: translate(6px, -10px) rotate(-8deg);
+    }
+  }
+  @keyframes feature-float-b {
+    0%,
+    100% {
+      transform: translate(0, 0);
+    }
+    50% {
+      transform: translate(-8px, 8px);
+    }
+  }
+  @keyframes feature-orb-drift {
+    0%,
+    100% {
+      opacity: 0.85;
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: translate(12px, -8px) scale(1.08);
+    }
+  }
+  @keyframes feature-glow-pulse {
+    0%,
+    100% {
+      opacity: 0.35;
+      transform: scale(1.12);
+    }
+    50% {
+      opacity: 0.65;
+      transform: scale(1.22);
+    }
+  }
+  .feature-3d-float-a {
+    animation: feature-float-a 5.5s ease-in-out infinite;
+  }
+  .feature-3d-float-b {
+    animation: feature-float-b 6.2s ease-in-out infinite;
+  }
+  .feature-3d-orb-a,
+  .feature-3d-orb-b {
+    animation: feature-orb-drift 7s ease-in-out infinite;
+  }
+  .feature-3d-orb-b {
+    animation-delay: -2.5s;
+  }
+  .feature-3d-glow-ring {
+    animation: feature-glow-pulse 3.8s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .feature-3d-float-a,
+    .feature-3d-float-b,
+    .feature-3d-orb-a,
+    .feature-3d-orb-b,
+    .feature-3d-glow-ring {
+      animation: none;
+    }
+    .feature-3d-tilt {
+      transition: none;
+    }
+    .feature-glass-shine::after {
+      animation: none;
+    }
+  }
+
+  /* Feature banners — organic glass (Spline-inspired, no cubes) */
+  .feature-glass-lens {
+    border-radius: 9999px;
+    background: linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.82) 0%,
+      rgba(255, 255, 255, 0.28) 55%,
+      rgba(255, 255, 255, 0.12) 100%
+    );
+    backdrop-filter: blur(20px) saturate(190%);
+    -webkit-backdrop-filter: blur(20px) saturate(190%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      0 12px 36px var(--feature-glow-soft, rgba(0, 157, 224, 0.22)),
+      0 0 48px var(--feature-glow, rgba(0, 157, 224, 0.15));
+  }
+  .feature-glass-blob {
+    border-radius: 9999px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.08));
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  }
+  .feature-glass-panel {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.45) 100%);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      0 8px 24px rgba(15, 23, 42, 0.06);
+  }
+  @keyframes feature-glass-shine {
+    0% {
+      transform: translateX(-120%) skewX(-12deg);
+      opacity: 0;
+    }
+    40% {
+      opacity: 0.65;
+    }
+    100% {
+      transform: translateX(220%) skewX(-12deg);
+      opacity: 0;
+    }
+  }
+  .feature-glass-shine {
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-glass-shine::after {
+    content: "";
+    position: absolute;
+    inset: -15% 0;
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.65) 50%,
+      transparent 60%
+    );
+    animation: feature-glass-shine 6s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .feature-banner-card:hover .feature-glass-lens {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      0 16px 44px var(--feature-glow-soft, rgba(0, 157, 224, 0.3)),
+      0 0 56px var(--feature-glow, rgba(0, 157, 224, 0.2));
+  }
+
+  /* פס הפרדה — מריחות צבע (יתרונות לובי באמצע הפיד) */
+  .feature-banners-fade-band {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    margin-inline: -1rem;
+    padding: 2rem 1rem 2.5rem;
+    background: #ffffff;
+  }
+  .feature-banners-color-smear {
+    position: absolute;
+    inset: -30% -12%;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .feature-banners-color-smear::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 58% 52% at 82% 48%, rgba(0, 157, 224, 0.42) 0%, transparent 68%),
+      radial-gradient(ellipse 52% 48% at 48% 42%, rgba(139, 92, 246, 0.34) 0%, transparent 65%),
+      radial-gradient(ellipse 50% 46% at 16% 58%, rgba(245, 158, 11, 0.28) 0%, transparent 62%),
+      radial-gradient(ellipse 90% 38% at 50% 52%, rgba(56, 189, 248, 0.2) 0%, transparent 72%);
+    filter: blur(36px);
+    transform: scale(1.05, 1.12) rotate(-2deg);
+    opacity: 0.95;
+  }
+  .feature-banners-color-smear::after {
+    content: "";
+    position: absolute;
+    top: 28%;
+    left: -18%;
+    right: -18%;
+    height: 52%;
+    background: linear-gradient(
+      92deg,
+      transparent 0%,
+      rgba(0, 157, 224, 0.38) 18%,
+      rgba(56, 189, 248, 0.3) 34%,
+      rgba(139, 92, 246, 0.36) 50%,
+      rgba(167, 139, 250, 0.26) 62%,
+      rgba(245, 158, 11, 0.32) 78%,
+      transparent 100%
+    );
+    filter: blur(42px);
+    transform: rotate(-1deg) scaleX(1.06);
+    opacity: 0.88;
+  }
+  .feature-banners-fade-band::before,
+  .feature-banners-fade-band::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    height: 5.5rem;
+    pointer-events: none;
+  }
+  .feature-banners-fade-band::before {
+    top: 0;
+    background: linear-gradient(
+      to bottom,
+      #ffffff 0%,
+      rgba(255, 255, 255, 0.88) 42%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+  .feature-banners-fade-band::after {
+    bottom: 0;
+    background: linear-gradient(
+      to top,
+      #ffffff 0%,
+      rgba(255, 255, 255, 0.88) 42%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+  /* אזור אישי — בתוך עמודת התוכן, בלי גלישה אופקית */
+  .feature-banners-fade-band--account {
+    margin-inline: 0;
+    padding: 1rem 0.75rem 1rem !important;
+    margin-bottom: 0;
+    overflow: hidden;
+  }
+  .feature-banners-fade-band--account .feature-banners-color-smear {
+    inset: -28% 0;
+  }
+  .feature-banners-fade-band--account .feature-banners-color-smear::after {
+    left: 0;
+    right: 0;
+  }
+  .feature-banners-fade-band--account::before {
+    height: 2rem;
+  }
+  .feature-banners-fade-band--account::after {
+    display: none;
+  }
+
+  @media (min-width: 640px) {
+    .feature-banners-fade-band {
+      margin-inline: -1.5rem;
+      padding: 2.25rem 1.5rem 2.75rem;
+    }
+    .feature-banners-fade-band--account {
+      margin-inline: 0;
+      padding: 1.25rem 1rem 1.25rem !important;
+    }
+    .feature-banners-color-smear::before {
+      filter: blur(44px);
+    }
+    .feature-banners-color-smear::after {
+      filter: blur(48px);
+    }
+  }
+
+  /* Footer — רקע רך + מריחת מותג עדינה */
+  .site-footer {
+    background: linear-gradient(180deg, #ffffff 0%, var(--surface-soft) 42%, #ffffff 100%);
+  }
+  .site-footer-glow {
+    background:
+      radial-gradient(ellipse 70% 100% at 85% 0%, rgba(0, 157, 224, 0.14) 0%, transparent 58%),
+      radial-gradient(ellipse 55% 80% at 10% 20%, rgba(56, 189, 248, 0.1) 0%, transparent 55%);
   }
 }

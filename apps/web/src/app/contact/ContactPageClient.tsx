@@ -13,7 +13,7 @@ import { bubble } from "@/components/bubble/styles";
 import { useLobbyAuth } from "@/contexts/LobbyAuthContext";
 import { fetchListingByIdFromFirestore } from "@/lib/firebase/listingQueries";
 import { isFirebaseConfigured } from "@/lib/firebase/isConfigured";
-import { buildSupportChatRouteId } from "@lobby/shared";
+import { accountMessagesThreadPath, buildSupportChatRouteId } from "@lobby/shared";
 import { submitSupportInquiry } from "@/lib/firebase/supportInquiry";
 import { cn } from "@/lib/utils";
 
@@ -80,7 +80,7 @@ export function ContactPageClient() {
         listingId: listingIdFromUrl || undefined,
         listingTitle: listingTitle.trim() || undefined,
       });
-      router.push(`/chat/${buildSupportChatRouteId(result.inquiryId)}`);
+      router.push(accountMessagesThreadPath(buildSupportChatRouteId(result.inquiryId)));
     } catch (err: unknown) {
       const message =
         err && typeof err === "object" && "message" in err && typeof err.message === "string"

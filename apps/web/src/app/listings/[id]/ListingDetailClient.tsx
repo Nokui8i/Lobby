@@ -18,6 +18,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import {
+  accountMessagesThreadPath,
   featureLabels,
   formatListingContactPhoneDisplay,
   formatListingLocationLine,
@@ -100,7 +101,10 @@ function ListingSectionHeading({
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-row-reverse gap-3 border-b border-slate-100 py-3.5 text-right last:border-b-0">
+    <div
+      className="flex items-start gap-3 border-b border-slate-100 py-3.5 text-right last:border-b-0"
+      dir="rtl"
+    >
       <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-soft text-brand [&>svg]:h-4 [&>svg]:w-4">
         {detailRowIcon(label)}
       </span>
@@ -225,7 +229,7 @@ export function ListingDetailClient({ listingId, initialListing }: ListingDetail
         publisherUserId: publisherUid,
         renterUserId: user.uid,
       });
-      router.push(`/chat/${threadId}`);
+      router.push(accountMessagesThreadPath(threadId));
     } catch {
       setChatHint("לא הצלחנו לפתוח שיחה.");
     } finally {
@@ -343,11 +347,11 @@ export function ListingDetailClient({ listingId, initialListing }: ListingDetail
             </section>
           </div>
 
-          <aside className="space-y-4 lg:sticky lg:top-24 lg:z-10 lg:self-start">
+          <aside className="space-y-4 lg:sticky lg:top-[calc(var(--header-height)+1rem)] lg:z-20 lg:self-start">
             <div className="bubble-card overflow-hidden shadow-bubble" style={{ borderRadius: 16 }}>
               <div className="border-b border-slate-100 bg-soft/60 px-5 py-4 text-right">
                 <p
-                  className="font-display text-[32px] font-bold leading-tight tracking-tight text-graphite"
+                  className="font-display text-[22px] font-bold leading-tight tracking-tight text-graphite md:text-[24px]"
                   dir="ltr"
                 >
                   ₪{activeListing.priceIls.toLocaleString("he-IL")}

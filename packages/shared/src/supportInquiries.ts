@@ -175,9 +175,9 @@ export function parseSupportChatRouteId(routeId: string): string | null {
   return inquiryId || null;
 }
 
-/** נתיב שיחת תמיכה בתוך הודעות (אתר) */
+/** נתיב שיחת תמיכה בתוך תיבת הודעות (אזור אישי) */
 export function supportInquiryMessagesPath(inquiryId: string): string {
-  return `/chat/${buildSupportChatRouteId(inquiryId)}`;
+  return `/account/messages/${buildSupportChatRouteId(inquiryId)}`;
 }
 
 export function formatSupportInquiryReference(referenceNumber: number): string {

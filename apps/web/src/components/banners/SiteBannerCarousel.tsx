@@ -15,20 +15,30 @@ function BannerImage({
   slide,
   priority,
   aspectRatio,
+  fixedHeightPx,
   sizes,
+  imageFit = "contain",
 }: {
   slide: HomeBannerSlide;
   priority?: boolean;
   aspectRatio: number;
+  fixedHeightPx?: number;
   sizes: string;
+  imageFit?: "contain" | "cover";
 }) {
   return (
-    <div className="relative w-full bg-slate-100" style={{ aspectRatio }}>
+    <div
+      className="relative w-full overflow-hidden bg-slate-100"
+      style={fixedHeightPx != null ? { height: fixedHeightPx } : { aspectRatio }}
+    >
       <Image
         src={slide.src}
         alt={slide.alt}
         fill
-        className="object-contain object-center"
+        className={cn(
+          "object-center",
+          imageFit === "cover" ? "object-cover" : "object-contain",
+        )}
         priority={priority}
         sizes={sizes}
       />
@@ -59,12 +69,16 @@ function SiteBannerStatic({
   slide,
   className,
   aspectRatio,
+  fixedHeightPx,
   sizes,
+  imageFit,
 }: {
   slide: HomeBannerSlide;
   className?: string;
   aspectRatio: number;
+  fixedHeightPx?: number;
   sizes: string;
+  imageFit?: "contain" | "cover";
 }) {
   return (
     <div
@@ -74,7 +88,14 @@ function SiteBannerStatic({
       )}
     >
       <BannerLink slide={slide}>
-        <BannerImage slide={slide} priority aspectRatio={aspectRatio} sizes={sizes} />
+        <BannerImage
+          slide={slide}
+          priority
+          aspectRatio={aspectRatio}
+          fixedHeightPx={fixedHeightPx}
+          sizes={sizes}
+          imageFit={imageFit}
+        />
       </BannerLink>
     </div>
   );
@@ -84,24 +105,36 @@ export function SiteBannerCarousel({
   slides,
   className,
   aspectRatio,
+  fixedHeightPx,
   sizes = "(max-width: 1280px) 100vw, 1280px",
   showIndicators = true,
   initialSlideIndex = 0,
+  imageFit = "contain",
 }: {
   slides: HomeBannerSlide[];
   className?: string;
   aspectRatio: number;
+  /** גובה קבוע (px) — רוחב מלא בלי להגדיל את הגובה */
+  fixedHeightPx?: number;
   sizes?: string;
   /** נקודות ניווט בתחתית — כבוי לפרסום חיצוני */
   showIndicators?: boolean;
   /** באיזה באנר להתחיל (פרסום חיצוני — אקראי בכל טעינה) */
   initialSlideIndex?: number;
+  imageFit?: "contain" | "cover";
 }) {
   const total = slides.length;
   if (total === 0) return null;
   if (total === 1) {
     return (
-      <SiteBannerStatic slide={slides[0]!} className={className} aspectRatio={aspectRatio} sizes={sizes} />
+      <SiteBannerStatic
+        slide={slides[0]!}
+        className={className}
+        aspectRatio={aspectRatio}
+        fixedHeightPx={fixedHeightPx}
+        sizes={sizes}
+        imageFit={imageFit}
+      />
     );
   }
 
@@ -110,9 +143,11 @@ export function SiteBannerCarousel({
       slides={slides}
       className={className}
       aspectRatio={aspectRatio}
+      fixedHeightPx={fixedHeightPx}
       sizes={sizes}
       showIndicators={showIndicators}
       initialSlideIndex={initialSlideIndex}
+      imageFit={imageFit}
     />
   );
 }
@@ -121,16 +156,20 @@ function SiteBannerCarouselMulti({
   slides,
   className,
   aspectRatio,
+  fixedHeightPx,
   sizes,
   showIndicators,
   initialSlideIndex,
+  imageFit,
 }: {
   slides: HomeBannerSlide[];
   className?: string;
   aspectRatio: number;
+  fixedHeightPx?: number;
   sizes: string;
   showIndicators: boolean;
   initialSlideIndex: number;
+  imageFit?: "contain" | "cover";
 }) {
   const total = slides.length;
   const safeInitial =
@@ -177,7 +216,9 @@ function SiteBannerCarouselMulti({
                   slide={slide}
                   priority={i === 0}
                   aspectRatio={aspectRatio}
+                  fixedHeightPx={fixedHeightPx}
                   sizes={sizes}
+                  imageFit={imageFit}
                 />
               </BannerLink>
             </div>

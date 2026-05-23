@@ -1,4 +1,4 @@
-import { buildSupportChatRouteId } from "@lobby/shared";
+import { accountMessagesThreadPath, buildSupportChatRouteId } from "@lobby/shared";
 import { redirect } from "next/navigation";
 
 interface SupportInquiryRedirectProps {
@@ -7,5 +7,5 @@ interface SupportInquiryRedirectProps {
 
 export default async function SupportInquiryRedirect({ params }: SupportInquiryRedirectProps) {
   const { inquiryId } = await params;
-  redirect(`/chat/${buildSupportChatRouteId(inquiryId)}`);
+  redirect(accountMessagesThreadPath(buildSupportChatRouteId(inquiryId)));
 }

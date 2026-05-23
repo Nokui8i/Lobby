@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { Headphones } from "lucide-react";
 import {
   DELETE_CHAT_THREAD_CONFIRM,
   DELETE_SUPPORT_INQUIRY_CONFIRM,
@@ -10,6 +9,8 @@ import {
   buildSupportChatRouteId,
   formatChatMessageTime,
   formatLobbySendError,
+  accountMessagesIndexPath,
+  accountMessagesThreadPath,
   formatSupportInquiryReference,
   logLobbyError,
   supportInquiryIsOpen,
@@ -20,7 +21,6 @@ import {
   ChatInboxEmpty,
   ChatInboxHeader,
   ChatInboxScroll,
-  ChatInboxSearch,
   ChatInboxSkeleton,
   ChatPanelShell,
   ChatStatusBanner,
@@ -31,6 +31,7 @@ import { ThreadCardMenu } from "@/components/messages/ThreadCardMenu";
 import { useLobbyAuth } from "@/contexts/LobbyAuthContext";
 import { useChatInbox } from "@/contexts/ChatInboxContext";
 import { isFirebaseConfigured } from "@/lib/firebase/isConfigured";
+import { isChatDemoThreadId } from "@/lib/chatDemo";
 import { deleteMyChatThread, deleteMySupportInquiry } from "@/lib/firebase/messagesDelete";
 import { ensureFirestoreAuthReady } from "@/lib/firebase/client";
 
@@ -87,13 +88,13 @@ export function ChatListClient({ activeThreadId }: { activeThreadId?: string | n
       if (pendingDelete.kind === "chat") {
         await deleteMyChatThread(pendingDelete.id);
         if (activeRouteMatches(activeThreadId, pendingDelete.id, "chat")) {
-          router.push("/chat");
+          router.push(accountMessagesIndexPath());
           router.refresh();
         }
       } else {
         await deleteMySupportInquiry(pendingDelete.id);
         if (activeRouteMatches(activeThreadId, pendingDelete.id, "support")) {
-          router.push("/chat");
+          router.push(accountMessagesIndexPath());
           router.refresh();
         }
       }
@@ -117,8 +118,11 @@ export function ChatListClient({ activeThreadId }: { activeThreadId?: string | n
       onAuth={openAuthModal}
     >
       <ChatPanelShell>
-        <ChatInboxHeader />
-        {inboxRows.length > 0 ? <ChatInboxSearch value={searchQuery} onChange={setSearchQuery} /> : null}
+        <ChatInboxHeader
+          showSearch={inboxRows.length > 0}
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
 
         {listLoading ? <ChatInboxSkeleton /> : null}
         {listError ? <ChatStatusBanner variant="error">{listError}</ChatStatusBanner> : null}
@@ -138,23 +142,26 @@ export function ChatListClient({ activeThreadId }: { activeThreadId?: string | n
                   const preview = thread.lastMessagePreview;
                   const mine = thread.lastMessageSenderId === user?.uid;
                   const title = thread.listingTitle || "שיחה";
+                  const isDemo = isChatDemoThreadId(thread.id);
 
                   return (
                     <ChatThreadListItem
                       key={`chat-${thread.id}`}
-                      href={`/chat/${thread.id}`}
+                      href={accountMessagesThreadPath(thread.id)}
                       active={active}
                       unread={unread}
                       title={title}
                       preview={preview ? `${mine ? "אתם: " : ""}${preview}` : undefined}
-                      meta="שיחה סביב המודעה"
+                      meta={isDemo ? "שיחת דמו · סביב המודעה" : "שיחה סביב המודעה"}
                       timeLabel={timeLabel}
                       menu={
-                        <ThreadCardMenu
-                          ariaLabel={`אפשרויות שיחה: ${title}`}
-                          deleteLabel={DELETE_CHAT_THREAD_CONFIRM.confirmLabel}
-                          onDeleteClick={() => setPendingDelete({ kind: "chat", id: thread.id, title })}
-                        />
+                        isDemo ? undefined : (
+                          <ThreadCardMenu
+                            ariaLabel={`אפשרויות שיחה: ${title}`}
+                            deleteLabel={DELETE_CHAT_THREAD_CONFIRM.confirmLabel}
+                            onDeleteClick={() => setPendingDelete({ kind: "chat", id: thread.id, title })}
+                          />
+                        )
                       }
                     />
                   );
@@ -170,14 +177,13 @@ export function ChatListClient({ activeThreadId }: { activeThreadId?: string | n
                 return (
                   <ChatThreadListItem
                     key={`support-${inquiry.id}`}
-                    href={`/chat/${routeId}`}
+                    href={accountMessagesThreadPath(routeId)}
                     active={active}
                     unread={supportInquiryIsOpen(inquiry.status) ? unread : 0}
                     title={title}
                     preview={inquiry.lastMessagePreview}
                     meta={`תמיכה · #${formatSupportInquiryReference(inquiry.referenceNumber)} · ${SUPPORT_INQUIRY_STATUS_LABELS[inquiry.status]}`}
                     timeLabel={timeLabel}
-                    icon={Headphones}
                     menu={
                       <ThreadCardMenu
                         ariaLabel={`אפשרויות פנייה: ${title}`}

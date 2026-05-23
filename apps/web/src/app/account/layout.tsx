@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { PageMain } from "@/components/layout/PageMain";
+import { AccountShell } from "@/components/account/AccountShell";
 
 export default function AccountLayout({ children }: { children: ReactNode }) {
-  return <PageMain flush>{children}</PageMain>;
+  return <AccountShell>{children}</AccountShell>;
 }

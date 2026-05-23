@@ -7,6 +7,7 @@ import {
   createOptimisticMessageId,
   formatChatMessageTime,
   formatLobbySendError,
+  accountMessagesIndexPath,
   logLobbyError,
 } from "@lobby/shared";
 import {
@@ -29,6 +30,12 @@ import {
 } from "@/lib/firebase/chat";
 import { getFirestoreDb, ensureFirestoreAuthReady } from "@/lib/firebase/client";
 import { isFirebaseConfigured } from "@/lib/firebase/isConfigured";
+import {
+  buildDemoChatThread,
+  getDemoChatMessages,
+  isChatDemoEnabled,
+  isChatDemoThreadId,
+} from "@/lib/chatDemo";
 import { mergeServerMessagesWithPending, pruneAcknowledgedPending } from "@/lib/mergePendingMessages";
 import { scrollThreadToBottom } from "@/lib/messaging/scrollThreadToBottom";
 
@@ -36,11 +43,8 @@ interface ChatThreadClientProps {
   threadId: string;
 }
 
-const CHAT_LEGAL_NOTICE =
-  "השיחות לתיאום סביב המודעה בלבד. Lobby אינה צד לעסקה, אינה מנטרת הודעות בזמן אמת ואינה אחראית לתוכן שמועבר בין משתמשים. אל תעבירו מידע רגיש או כספים ללא וידוא זהות.";
-
 export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
-  const { user, loading, openAuthModal } = useLobbyAuth();
+  const { user, loading, openAuthModal, displayNameForUi } = useLobbyAuth();
   const [thread, setThread] = useState<ChatThreadSummary | null | undefined>(undefined);
   const [messages, setMessages] = useState<ChatMessageRow[]>([]);
   const [pendingMessages, setPendingMessages] = useState<ChatMessageRow[]>([]);
@@ -51,7 +55,22 @@ export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!isFirebaseConfigured() || !user) {
+    if (!user) {
+      setThread(null);
+      setMessages([]);
+      return;
+    }
+
+    if (isChatDemoEnabled() && isChatDemoThreadId(threadId)) {
+      const summary = buildDemoChatThread(user.uid);
+      summary.unreadForViewer = 0;
+      setThread(summary);
+      setMessages(getDemoChatMessages(user.uid));
+      setPendingMessages([]);
+      return;
+    }
+
+    if (!isFirebaseConfigured()) {
       setThread(null);
       setMessages([]);
       return;
@@ -132,11 +151,6 @@ export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
       return;
     }
 
-    const otherId = thread.participantIds.find((id) => id !== user.uid);
-    if (!otherId) {
-      return;
-    }
-
     const optimisticId = createOptimisticMessageId();
     const optimistic: ChatMessageRow = {
       id: optimisticId,
@@ -146,9 +160,35 @@ export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
     };
 
     setDraft("");
-    setPendingMessages((prev) => [...prev, optimistic]);
     setSendError(null);
     setSending(true);
+
+    if (isChatDemoThreadId(threadId)) {
+      const committed: ChatMessageRow = { ...optimistic, id: `demo-local-${Date.now()}` };
+      setMessages((prev) => [...prev, committed]);
+      setThread((prev) =>
+        prev
+          ? {
+              ...prev,
+              updatedAt: Date.now(),
+              lastMessageAt: Date.now(),
+              lastMessagePreview: text.slice(0, 140),
+              lastMessageSenderId: user.uid,
+              unreadForViewer: 0,
+            }
+          : prev,
+      );
+      setSending(false);
+      return;
+    }
+
+    const otherId = thread.participantIds.find((id) => id !== user.uid);
+    if (!otherId) {
+      setSending(false);
+      return;
+    }
+
+    setPendingMessages((prev) => [...prev, optimistic]);
 
     try {
       await ensureFirestoreAuthReady(user);
@@ -165,7 +205,7 @@ export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
     }
   }
 
-  if (thread === undefined && user && isFirebaseConfigured()) {
+  if (thread === undefined && user && (isFirebaseConfigured() || isChatDemoThreadId(threadId))) {
     return (
       <ChatPanelShell className="items-center justify-center" role="region" aria-label="שיחה">
         <p className="text-muted-foreground text-sm">טוען שיחה…</p>
@@ -178,7 +218,7 @@ export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
       <ChatPanelShell className="items-center justify-center gap-3 p-8 text-center" role="region" aria-label="שיחה">
         <p className="text-sm">אין גישה לשיחה הזאת.</p>
         <Button variant="outline" asChild>
-          <Link href="/chat">חזרה להודעות</Link>
+          <Link href={accountMessagesIndexPath()}>חזרה להודעות</Link>
         </Button>
       </ChatPanelShell>
     );
@@ -195,17 +235,28 @@ export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
       {thread ? (
         <ChatPanelShell role="region" aria-label="שיחה">
           <ChatThreadHeader
-            backHref="/chat"
+            backHref={accountMessagesIndexPath()}
             title={thread.listingTitle || "שיחה"}
-            subtitle="צ׳אט סביב המודעה"
+            listingHref={thread.listingId ? `/listings/${thread.listingId}` : undefined}
+            subtitle={
+              isChatDemoThreadId(threadId) ? "שיחת דמו · לא נשמרת בשרת" : "צ׳אט סביב המודעה"
+            }
           />
 
           <ChatMessageArea scrollRef={messagesScrollRef}>
             {displayMessages.map((message) => {
               const mine = message.senderId === user?.uid;
               const timeLabel = formatChatMessageTime(message.createdAt);
+              const senderName = mine
+                ? displayNameForUi.trim() || "אתם"
+                : "מפרסם";
               return (
-                <ChatMessageBubble key={message.id} mine={Boolean(mine)} timeLabel={timeLabel || undefined}>
+                <ChatMessageBubble
+                  key={message.id}
+                  mine={Boolean(mine)}
+                  senderName={senderName}
+                  timeLabel={timeLabel || undefined}
+                >
                   {message.text}
                 </ChatMessageBubble>
               );
@@ -220,7 +271,6 @@ export function ChatThreadClient({ threadId }: ChatThreadClientProps) {
             sending={sending}
             maxLength={CHAT_MESSAGE_MAX_LENGTH}
             error={sendError}
-            notice={CHAT_LEGAL_NOTICE}
           />
         </ChatPanelShell>
       ) : null}

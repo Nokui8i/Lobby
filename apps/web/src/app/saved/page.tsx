@@ -1,4 +1,3 @@
-import { PageMain } from "@/components/layout/PageMain";
 import { SavedListingsClient } from "./SavedListingsClient";
 
 export const metadata = {
@@ -6,9 +5,5 @@ export const metadata = {
 };
 
 export default function SavedListingsPage() {
-  return (
-    <PageMain flush>
-      <SavedListingsClient />
-    </PageMain>
-  );
+  return <SavedListingsClient />;
 }

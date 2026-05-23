@@ -15,7 +15,7 @@ export default function ContactPage() {
       <h2>שליחת פנייה</h2>
       <p>
         מלאו את הטופס — תיפתח שיחה עם צוות התמיכה. אפשר לעקוב ולהמשיך לכתוב ב{" "}
-        <a href="/chat">הודעות</a>.
+        <a href="/account/messages">הודעות</a>.
       </p>
       <Suspense fallback={<p>טוען…</p>}>
         <ContactPageClient />

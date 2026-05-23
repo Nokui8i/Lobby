@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import {
   EMPTY_FEED_SEARCH_FILTERS,
   FEED_FEATURE_FILTER_OPTIONS,
@@ -16,6 +17,7 @@ import { LocationSearchInput } from "@/components/LocationSearchInput";
 import { bubble } from "@/components/bubble/styles";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { lobbySelectOptionCls, useLobbySelectListHighlight } from "@/components/ui/lobby-select-option";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +32,95 @@ function pricePillLabel(filters: FeedSearchFilters): string {
 
 const feedFieldClass =
   "h-10 w-full shrink-0 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-graphite outline-none transition-colors placeholder:text-graphite/40 focus:border-brand focus:ring-2 focus:ring-brand/15 disabled:opacity-50";
+
+const feedPopoverClass =
+  "z-[200] max-h-[min(280px,50vh)] overflow-y-auto rounded-xl border border-slate-200/90 bg-white p-1 shadow-[0_4px_16px_rgba(15,23,42,0.1),0_12px_32px_rgba(15,23,42,0.12)]";
+
+function FeedFilterSelect({
+  value,
+  onChange,
+  options,
+  placeholder,
+  disabled = false,
+  active = false,
+  "aria-label": ariaLabel,
+  listWidthClass = "w-[var(--radix-popover-trigger-width)]",
+}: {
+  value: string;
+  onChange: (id: string) => void;
+  options: { id: string; label: string }[];
+  placeholder: string;
+  disabled?: boolean;
+  active?: boolean;
+  "aria-label"?: string;
+  listWidthClass?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const { resetHighlight, optionPointerHandlers, isHighlighted } = useLobbySelectListHighlight();
+  const selected = options.find((o) => o.id === value);
+  const displayLabel = selected?.id ? selected.label : placeholder;
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) resetHighlight();
+      }}
+    >
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          disabled={disabled}
+          aria-label={ariaLabel}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          className={cn(
+            feedFieldClass,
+            "flex items-center justify-between gap-2 text-right",
+            active && "border-brand ring-2 ring-brand/15 text-brand",
+          )}
+        >
+          <span className={cn("min-w-0 flex-1 truncate", !selected?.id && "text-graphite/50")}>
+            {displayLabel}
+          </span>
+          <ChevronDown
+            className={cn("size-4 shrink-0 text-graphite/45 transition-transform", open && "rotate-180")}
+            aria-hidden
+          />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        className={cn(feedPopoverClass, listWidthClass)}
+        align="start"
+        side="bottom"
+        sideOffset={8}
+        collisionPadding={12}
+      >
+        <ul role="listbox" className="m-0 list-none p-0">
+          {options.map((o) => {
+            const isSelected = o.id === value;
+            return (
+              <li key={o.id || "__all"} role="option" aria-selected={isSelected}>
+                <button
+                  type="button"
+                  className={lobbySelectOptionCls(isSelected, isHighlighted(o.id), "sm")}
+                  {...optionPointerHandlers(o.id)}
+                  onClick={() => {
+                    onChange(o.id);
+                    setOpen(false);
+                  }}
+                >
+                  {o.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export function FeedSearchBar({
   appliedFilters,
@@ -68,7 +159,7 @@ export function FeedSearchBar({
       aria-label="חיפוש וסינון דירות"
     >
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))_auto] lg:items-center lg:gap-2">
-        <div className="relative z-30 min-w-0 overflow-visible sm:col-span-2 lg:col-span-1">
+        <div className="relative z-10 min-w-0 overflow-visible sm:col-span-2 lg:col-span-1">
           <LocationSearchInput
             label="איפה מחפשים?"
             placeholder="עיר או רחוב"
@@ -80,20 +171,19 @@ export function FeedSearchBar({
           />
         </div>
 
-        <select
-          className={feedFieldClass}
+        <FeedFilterSelect
           value={draft.propertyTypeId}
+          placeholder="סוג הנכס"
+          active={Boolean(draft.propertyTypeId)}
           disabled={loading}
-          onChange={(e) => setDraft((prev) => ({ ...prev, propertyTypeId: e.target.value }))}
           aria-label="סוג הנכס"
-        >
-          <option value="">סוג הנכס</option>
-          {LISTING_PROPERTY_TYPE_OPTIONS.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+          listWidthClass="min-w-[var(--radix-popover-trigger-width)] w-[min(100%,16rem)]"
+          options={[
+            { id: "", label: "הכל" },
+            ...LISTING_PROPERTY_TYPE_OPTIONS.map((o) => ({ id: o.id, label: o.label })),
+          ]}
+          onChange={(id) => setDraft((prev) => ({ ...prev, propertyTypeId: id }))}
+        />
 
         <Popover open={priceOpen} onOpenChange={setPriceOpen}>
           <PopoverTrigger asChild>
@@ -110,9 +200,11 @@ export function FeedSearchBar({
             </button>
           </PopoverTrigger>
           <PopoverContent
-            className="w-56 rounded-xl border border-slate-200/90 p-3 shadow-[0_4px_16px_rgba(15,23,42,0.1)]"
+            className="z-[200] w-56 rounded-xl border border-slate-200/90 bg-white p-3 shadow-[0_4px_16px_rgba(15,23,42,0.1),0_12px_32px_rgba(15,23,42,0.12)]"
             align="start"
-            sideOffset={6}
+            side="bottom"
+            sideOffset={8}
+            collisionPadding={12}
           >
             <div className="grid gap-2">
               <div className="grid gap-1">
@@ -156,22 +248,18 @@ export function FeedSearchBar({
           </PopoverContent>
         </Popover>
 
-        <select
-          className={feedFieldClass}
+        <FeedFilterSelect
           value={roomId}
+          placeholder="חדרים"
+          active={Boolean(roomId)}
           disabled={loading}
-          onChange={(e) => {
-            const rooms = feedSearchFiltersFromRoomId(e.target.value);
+          aria-label="מספר חדרים"
+          options={FEED_ROOM_FILTER_OPTIONS.map((o) => ({ id: o.id, label: o.label }))}
+          onChange={(id) => {
+            const rooms = feedSearchFiltersFromRoomId(id);
             setDraft((prev) => ({ ...prev, ...rooms }));
           }}
-          aria-label="מספר חדרים"
-        >
-          {FEED_ROOM_FILTER_OPTIONS.map((o) => (
-            <option key={o.id || "all"} value={o.id}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        />
 
         <button
           type="button"

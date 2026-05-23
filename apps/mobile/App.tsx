@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, NativeScrollEvent, ScrollView } from 'react-native';
 import {
   buildSupportChatRouteId,
@@ -8,6 +8,8 @@ import {
   type FeedSearchFilters,
   type FeedSortId,
   type RentalListing,
+  createFeedShuffleSeed,
+  orderFeedForDisplay,
 } from '@lobby/shared';
 import { subscribeChatThreadsForUser, type ChatThreadSummary } from './lib/firebase/chat';
 import { subscribeMySupportInquiries, type SupportInquirySummary } from './lib/firebase/supportInquiryThread';
@@ -60,6 +62,7 @@ export default function App() {
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [appliedFeedFilters, setAppliedFeedFilters] = useState<FeedSearchFilters>(EMPTY_FEED_SEARCH_FILTERS);
   const [appliedFeedSort, setAppliedFeedSort] = useState<FeedSortId>(DEFAULT_FEED_SORT_ID);
+  const [feedShuffleSeed, setFeedShuffleSeed] = useState(() => createFeedShuffleSeed());
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishEditListingId, setPublishEditListingId] = useState<string | null>(null);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -317,14 +320,10 @@ export default function App() {
           setSettingsOpen(false);
           setAccountOpen(true);
         }}
-        onOpenSupport={() => {
+        onOpenNotifications={() => {
           setSettingsOpen(false);
-          setMainTab('messages');
-          setChatRoute({ kind: 'list' });
-        }}
-        onOpenContact={() => {
-          setSettingsOpen(false);
-          setContactOpen(true);
+          setAccountOpen(false);
+          setNotificationsOpen(true);
         }}
         onPushEnabled={() => setPushRegisterTick((t) => t + 1)}
       />
@@ -450,13 +449,28 @@ export default function App() {
     );
   }
 
-  const visibleListings = feedListings.slice(0, visibleListingCount);
+  const displayFeedListings = useMemo(
+    () =>
+      orderFeedForDisplay(
+        feedListings,
+        appliedFeedSort,
+        appliedFeedSort === DEFAULT_FEED_SORT_ID ? feedShuffleSeed : null,
+      ),
+    [feedListings, appliedFeedSort, feedShuffleSeed],
+  );
+
+  const visibleListings = displayFeedListings.slice(0, visibleListingCount);
   const feedFilterSummary = appliedFeedFilters.location
     ? feedLocationFilterSummary(appliedFeedFilters.location)
     : '';
 
+  useEffect(() => {
+    setFeedShuffleSeed(createFeedShuffleSeed());
+  }, [appliedFeedFilters, appliedFeedSort]);
+
   function applyFeedSearch(filters: FeedSearchFilters) {
     setAppliedFeedFilters(filters);
+    setFeedShuffleSeed(createFeedShuffleSeed());
     setFilterModalVisible(false);
     setMainTab('home');
     feedScrollRef.current?.scrollTo({ y: 0, animated: true });

@@ -273,9 +273,6 @@ function ListingChatThreadView({
           })}
         </ScrollView>
         {sendError ? <Text style={appStyles.chatSendError}>{sendError}</Text> : null}
-        <Text style={appStyles.chatLegalNoticeMobile}>
-          השיחות לתיאום סביב המודעה בלבד. Lobby אינה צד לעסקה ואינה מנטרת הודעות בזמן אמת.
-        </Text>
         <View style={appStyles.chatComposerWrap}>
           <View style={appStyles.chatComposerBar}>
             <Pressable

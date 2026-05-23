@@ -5,7 +5,6 @@ export type ListingOwnerActionId =
   | "edit"
   | "continue_publish"
   | "renew"
-  | "boost"
   | "freeze"
   | "unfreeze"
   | "mark_rented"
@@ -16,7 +15,6 @@ export const LISTING_OWNER_ACTION_LABEL_HE: Record<ListingOwnerActionId, string>
   edit: "עריכה",
   continue_publish: "המשך פרסום",
   renew: "חידוש מודעה",
-  boost: "קידום (Boost)",
   freeze: "הקפאת מודעה",
   unfreeze: "החזרה לפרסום",
   mark_rented: "סימון כהושכר",
@@ -60,17 +58,11 @@ export const LISTING_OWNER_ACTION_CONFIRM_HE: Partial<
   },
 };
 
-export const LISTING_OWNER_ACTION_BOOST_INFO_HE: ListingOwnerActionConfirm = {
-  title: "קידום (Boost)",
-  body: "קידום מודעות יהיה זמין בקרוב — כולל תשלום מאובטח.",
-  confirmLabel: "הבנתי",
-};
-
 /** פעולות זמינות לבעל המודעה לפי סטטוס */
 export function listingOwnerActionsForStatus(status: ListingStatus): ListingOwnerActionId[] {
   switch (status) {
     case "active":
-      return ["view", "edit", "freeze", "boost", "mark_rented", "delete"];
+      return ["view", "edit", "freeze", "mark_rented", "delete"];
     case "frozen":
       return ["view", "unfreeze", "edit", "delete"];
     case "draft":

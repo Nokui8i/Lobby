@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { lobbySelectOptionCls, useLobbySelectListHighlight } from "@/components/ui/lobby-select-option";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,7 @@ export function PublishSelectField({
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const { resetHighlight, optionPointerHandlers, isHighlighted } = useLobbySelectListHighlight();
   const selected = options.find((o) => o.id === value);
 
   return (
@@ -36,7 +38,13 @@ export function PublishSelectField({
         {label}
         {required ? <span className="text-red-800"> *</span> : null}
       </label>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) resetHighlight();
+        }}
+      >
         <PopoverTrigger asChild>
           <button
             type="button"
@@ -65,10 +73,8 @@ export function PublishSelectField({
                 <li key={o.id} role="option" aria-selected={isSelected}>
                   <button
                     type="button"
-                    className={cn(
-                      "block w-full rounded-lg px-3 py-2.5 text-right text-[15px] font-medium transition",
-                      isSelected ? "bg-brand/10 font-semibold text-brand" : "text-graphite hover:bg-soft",
-                    )}
+                    className={lobbySelectOptionCls(isSelected, isHighlighted(o.id), "md")}
+                    {...optionPointerHandlers(o.id)}
                     onClick={() => {
                       onChange(o.id);
                       setOpen(false);

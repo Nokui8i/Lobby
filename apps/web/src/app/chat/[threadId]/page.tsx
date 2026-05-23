@@ -1,11 +1,11 @@
-import { MessagesThreadClient } from "../MessagesThreadClient";
+import { redirect } from "next/navigation";
+import { accountMessagesThreadPath } from "@lobby/shared";
 
-interface ChatThreadPageProps {
+interface ChatLegacyThreadRedirectProps {
   params: Promise<{ threadId: string }>;
 }
 
-export default async function ChatThreadPage({ params }: ChatThreadPageProps) {
+export default async function ChatLegacyThreadRedirect({ params }: ChatLegacyThreadRedirectProps) {
   const { threadId } = await params;
-
-  return <MessagesThreadClient routeId={threadId} />;
+  redirect(accountMessagesThreadPath(threadId));
 }

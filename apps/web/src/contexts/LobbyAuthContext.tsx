@@ -18,7 +18,7 @@ import { isLobbyUserBanned } from "@/lib/firebase/authBanCheck";
 import { ensureUserDocument } from "@/lib/firebase/ensureUserDocument";
 import { getFirebaseAuth } from "@/lib/firebase/client";
 import { isFirebaseConfigured } from "@/lib/firebase/isConfigured";
-import { fetchUserProfileDisplayName } from "@/lib/firebase/userProfile";
+import { fetchUserProfileDisplayName, updateUserDisplayName } from "@/lib/firebase/userProfile";
 
 export type GoogleAuthModalResult =
   | { status: "closed" }
@@ -31,6 +31,7 @@ interface LobbyAuthContextValue {
   displayNameForUi: string;
   loading: boolean;
   signOutUser: () => Promise<void>;
+  updateDisplayName: (displayName: string) => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, displayName: string) => Promise<void>;
   /** כניסה עם Google — ללא חובת אימייל; אם יש אימייל בשדה משמש רק כ־login_hint לגוגל */
@@ -110,6 +111,22 @@ export function LobbyAuthProvider({ children }: { children: ReactNode }) {
 
     await signOut(getFirebaseAuth());
   }, []);
+
+  const updateDisplayName = useCallback(
+    async (displayName: string) => {
+      if (!isFirebaseConfigured()) {
+        throw new Error("Firebase is not configured.");
+      }
+      const auth = getFirebaseAuth();
+      const current = auth.currentUser;
+      if (!current) {
+        throw new Error("Not signed in.");
+      }
+      await updateUserDisplayName(current, displayName);
+      await refreshProfileDisplayName(current);
+    },
+    [refreshProfileDisplayName],
+  );
 
   const abandonPendingGoogleProfile = useCallback(async () => {
     const cred = pendingGoogleOAuthCredentialRef.current;
@@ -395,6 +412,7 @@ export function LobbyAuthProvider({ children }: { children: ReactNode }) {
       displayNameForUi,
       loading,
       signOutUser,
+      updateDisplayName,
       signInWithEmail,
       signUpWithEmail,
       signInWithGoogleForSignIn,
@@ -410,6 +428,7 @@ export function LobbyAuthProvider({ children }: { children: ReactNode }) {
       displayNameForUi,
       loading,
       signOutUser,
+      updateDisplayName,
       signInWithEmail,
       signUpWithEmail,
       signInWithGoogleForSignIn,

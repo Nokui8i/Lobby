@@ -19,7 +19,7 @@ export function PageMain({ children, className, flush = false, fullBleed = false
       <div
         className={cn(
           "mx-auto w-full min-w-0 max-w-[1320px] px-4 sm:px-6",
-          flush ? "py-3 pb-8 md:py-4" : "py-5 pb-10 md:py-6",
+          flush ? "py-2 pb-6 md:py-3" : "py-5 pb-10 md:py-6",
         )}
       >
         {children}

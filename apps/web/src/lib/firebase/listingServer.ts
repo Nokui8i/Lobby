@@ -1,5 +1,11 @@
 import "server-only";
-import { LISTINGS_COLLECTION, listingFromFirestorePayload, type RentalListing } from "@lobby/shared";
+import {
+  LISTINGS_COLLECTION,
+  getHomeFeedDemoListingById,
+  isHomeFeedDemoEnabled,
+  listingFromFirestorePayload,
+  type RentalListing,
+} from "@lobby/shared";
 
 function decodeFirestoreValue(value: unknown): unknown {
   if (!value || typeof value !== "object") {
@@ -48,6 +54,13 @@ function decodeFirestoreFields(fields: Record<string, unknown>): Record<string, 
 
 /** מודעה פעילה לציבור — לטעינה ראשונית מהשרת (ללא Auth). */
 export async function fetchPublicActiveListingServer(listingId: string): Promise<RentalListing | null> {
+  if (isHomeFeedDemoEnabled()) {
+    const demo = getHomeFeedDemoListingById(listingId);
+    if (demo) {
+      return demo;
+    }
+  }
+
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
   if (!projectId || !listingId) {
     return null;

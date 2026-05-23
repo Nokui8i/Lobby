@@ -1,33 +1,36 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   DEFAULT_FEED_SORT_ID,
   EMPTY_FEED_SEARCH_FILTERS,
+  feedFiltersFromUrlSearchParams,
+  feedFiltersUrlQueryString,
   feedLocationFilterSummary,
   feedSearchFiltersIsActive,
   type FeedSearchFilters,
   type FeedSortId,
+  mergeFeedWithHomeDemoListings,
+  isHomeFeedDemoEnabled,
+  HOME_FEED_DEMO_INITIAL_VISIBLE,
+  HOME_FEED_DEMO_LOAD_STEP,
+  createFeedShuffleSeed,
+  orderFeedForDisplay,
   type RentalListing,
 } from "@lobby/shared";
 import { FeedSortMenu } from "@/components/FeedSortMenu";
-import { ListingCard } from "@/components/listings/ListingCard";
+import { ListingHomeFeed } from "@/components/listings/ListingHomeFeed";
+import { type FeedListingItem } from "@/components/listings/listingFeedLayout";
 import { ListingFeedSkeleton } from "@/components/listings/ListingCardSkeleton";
-import { LISTING_FEED_GRID_CLASS } from "@/components/listings/listingCardStyles";
 import { fetchActiveListingsFromFirestore } from "@/lib/firebase/listingQueries";
 import { isFirebaseConfigured } from "@/lib/firebase/isConfigured";
 import { HomeFeedHero } from "./HomeFeedBanner";
 
-const INITIAL_VISIBLE_LISTINGS = 6;
-const LISTINGS_LOAD_STEP = 6;
+const INITIAL_VISIBLE_LISTINGS = isHomeFeedDemoEnabled() ? HOME_FEED_DEMO_INITIAL_VISIBLE : 6;
+const LISTINGS_LOAD_STEP = isHomeFeedDemoEnabled() ? HOME_FEED_DEMO_LOAD_STEP : 6;
 const FEED_FETCH_LIMIT = 48;
-
-type FeedListing = RentalListing & {
-  feedKey: string;
-  listingId: string;
-};
-
-function createFirestoreFeed(listings: RentalListing[]): FeedListing[] {
+function createFirestoreFeed(listings: RentalListing[]): FeedListingItem[] {
   return listings.map((listing) => ({
     ...listing,
     feedKey: `${listing.id}-feed-firestore`,
@@ -43,16 +46,73 @@ function FeedEmptyState({ children }: { children: ReactNode }) {
   );
 }
 
+function feedStateQueryKey(filters: FeedSearchFilters, sortId: FeedSortId): string {
+  return feedFiltersUrlQueryString(filters, sortId);
+}
+
 export function ListingsFeed() {
-  const [appliedFilters, setAppliedFilters] = useState<FeedSearchFilters>(EMPTY_FEED_SEARCH_FILTERS);
-  const [appliedSort, setAppliedSort] = useState<FeedSortId>(DEFAULT_FEED_SORT_ID);
-  const [feedListings, setFeedListings] = useState<FeedListing[]>([]);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlFeedState = feedFiltersFromUrlSearchParams(new URLSearchParams(searchParams.toString()));
+  const [appliedFilters, setAppliedFilters] = useState<FeedSearchFilters>(urlFeedState.filters);
+  const [appliedSort, setAppliedSort] = useState<FeedSortId>(urlFeedState.sortId);
+  const urlQueryKeyRef = useRef(feedStateQueryKey(urlFeedState.filters, urlFeedState.sortId));
+  const [feedListings, setFeedListings] = useState<FeedListingItem[]>([]);
   const [feedLoading, setFeedLoading] = useState(true);
   const [feedError, setFeedError] = useState(false);
   const [visibleListingCount, setVisibleListingCount] = useState(INITIAL_VISIBLE_LISTINGS);
+  const [feedShuffleSeed, setFeedShuffleSeed] = useState(() => createFeedShuffleSeed());
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const feedListingsRef = useRef<FeedListing[]>([]);
+  const feedListingsRef = useRef<FeedListingItem[]>([]);
+
+  const syncFeedToUrl = useCallback(
+    (filters: FeedSearchFilters, sortId: FeedSortId) => {
+      const nextKey = feedStateQueryKey(filters, sortId);
+      if (nextKey === urlQueryKeyRef.current) {
+        return;
+      }
+      urlQueryKeyRef.current = nextKey;
+      const href = nextKey ? `/?${nextKey}` : "/";
+      router.replace(href, { scroll: false });
+    },
+    [router],
+  );
+
+  useEffect(() => {
+    const parsed = feedFiltersFromUrlSearchParams(new URLSearchParams(searchParams.toString()));
+    const nextKey = feedStateQueryKey(parsed.filters, parsed.sortId);
+    if (nextKey === urlQueryKeyRef.current) {
+      return;
+    }
+    urlQueryKeyRef.current = nextKey;
+    setAppliedFilters(parsed.filters);
+    setAppliedSort(parsed.sortId);
+  }, [searchParams]);
+
+  const applyFeedSearch = useCallback(
+    (filters: FeedSearchFilters) => {
+      setAppliedFilters(filters);
+      setFeedShuffleSeed(createFeedShuffleSeed());
+      syncFeedToUrl(filters, appliedSort);
+    },
+    [appliedSort, syncFeedToUrl],
+  );
+
+  const applyFeedSort = useCallback(
+    (sortId: FeedSortId) => {
+      setAppliedSort(sortId);
+      if (sortId === DEFAULT_FEED_SORT_ID) {
+        setFeedShuffleSeed(createFeedShuffleSeed());
+      }
+      syncFeedToUrl(appliedFilters, sortId);
+    },
+    [appliedFilters, syncFeedToUrl],
+  );
+
+  useEffect(() => {
+    setFeedShuffleSeed(createFeedShuffleSeed());
+  }, [appliedFilters, appliedSort]);
 
   const loadListings = useCallback(async () => {
     const isBackground = feedListingsRef.current.length > 0;
@@ -60,7 +120,12 @@ export function ListingsFeed() {
     if (!isBackground) setFeedLoading(true);
 
     if (!isFirebaseConfigured()) {
-      setFeedListings([]);
+      const demoOnly = mergeFeedWithHomeDemoListings([], appliedFilters, appliedSort);
+      feedListingsRef.current = createFirestoreFeed(demoOnly);
+      setFeedListings(feedListingsRef.current);
+      setVisibleListingCount(
+        Math.min(isHomeFeedDemoEnabled() ? HOME_FEED_DEMO_INITIAL_VISIBLE : INITIAL_VISIBLE_LISTINGS, demoOnly.length),
+      );
       setFeedLoading(false);
       return;
     }
@@ -71,13 +136,29 @@ export function ListingsFeed() {
         feedFilters: appliedFilters,
         feedSort: appliedSort,
       });
-      const feed = createFirestoreFeed(remote);
+      const feed = createFirestoreFeed(mergeFeedWithHomeDemoListings(remote, appliedFilters, appliedSort));
       feedListingsRef.current = feed;
       setFeedListings(feed);
       setVisibleListingCount(Math.min(INITIAL_VISIBLE_LISTINGS, feed.length));
-    } catch {
-      setFeedListings([]);
-      setFeedError(true);
+    } catch (err) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("[Lobby] טעינת פיד נכשלה:", err);
+      }
+      if (isHomeFeedDemoEnabled()) {
+        const demoOnly = mergeFeedWithHomeDemoListings([], appliedFilters, appliedSort);
+        feedListingsRef.current = createFirestoreFeed(demoOnly);
+        setFeedListings(feedListingsRef.current);
+        setVisibleListingCount(
+          Math.min(
+            isHomeFeedDemoEnabled() ? HOME_FEED_DEMO_INITIAL_VISIBLE : INITIAL_VISIBLE_LISTINGS,
+            demoOnly.length,
+          ),
+        );
+        setFeedError(false);
+      } else {
+        setFeedListings([]);
+        setFeedError(true);
+      }
     } finally {
       setFeedLoading(false);
     }
@@ -102,19 +183,29 @@ export function ListingsFeed() {
     return () => observer.disconnect();
   }, [feedListings.length]);
 
-  const visibleListings = feedListings.slice(0, visibleListingCount);
+  const orderedFeed = useMemo(
+    () =>
+      orderFeedForDisplay(
+        feedListings,
+        appliedSort,
+        appliedSort === DEFAULT_FEED_SORT_ID ? feedShuffleSeed : null,
+      ),
+    [feedListings, appliedSort, feedShuffleSeed],
+  );
+
+  const visibleListings = orderedFeed.slice(0, visibleListingCount);
   const locationSummary = appliedFilters.location ? feedLocationFilterSummary(appliedFilters.location) : "";
 
   return (
     <div>
       <HomeFeedHero
         appliedFilters={appliedFilters}
-        onSearch={setAppliedFilters}
+        onSearch={applyFeedSearch}
         loading={feedLoading}
-        sortRow={<FeedSortMenu value={appliedSort} onChange={setAppliedSort} disabled={feedLoading} />}
+        sortRow={<FeedSortMenu value={appliedSort} onChange={applyFeedSort} disabled={feedLoading} />}
       />
 
-      <section className="mx-auto mt-5 max-w-[1280px] px-4 sm:px-6">
+      <section className="relative z-0 mx-auto mt-5 max-w-[1280px] px-4 sm:px-6">
         <div className="mb-5 flex flex-wrap items-center justify-start gap-2">
           <h2 className="font-display m-0 text-2xl font-bold text-graphite">דירות להשכרה</h2>
           {appliedFilters.location ? (
@@ -125,7 +216,7 @@ export function ListingsFeed() {
         </div>
 
         {feedLoading && feedListings.length === 0 ? (
-          <ListingFeedSkeleton count={6} />
+          <ListingFeedSkeleton count={isHomeFeedDemoEnabled() ? 12 : 6} />
         ) : null}
 
         {!feedLoading && feedError ? (
@@ -141,30 +232,10 @@ export function ListingsFeed() {
         ) : null}
 
         {visibleListings.length > 0 ? (
-          <div className={LISTING_FEED_GRID_CLASS}>
-            {visibleListings.map((listing) => (
-              <ListingCard key={listing.feedKey} listing={listing} />
-            ))}
-          </div>
+          <ListingHomeFeed listings={visibleListings} />
         ) : null}
 
         <div ref={loadMoreRef} className="h-px shrink-0" aria-hidden />
-      </section>
-
-      <section className="mx-auto mt-16 max-w-[1280px] px-4 pb-8 sm:px-6">
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            { t: "חיפוש חכם", d: "סינון לפי אזור, מחיר, חדרים ומאפיינים.", e: "🔎" },
-            { t: "צ׳אט ישיר", d: "תקשורת מול המפרסם בלי תיווך.", e: "💬" },
-            { t: "דיווח מהיר", d: "כל מודעה ניתנת לדיווח על עמלה או הונאה.", e: "🛡️" },
-          ].map((f) => (
-            <div key={f.t} className="bubble-card p-5" style={{ borderRadius: 16 }}>
-              <div className="grid h-10 w-10 place-items-center rounded-lg bg-brand/10 text-xl">{f.e}</div>
-              <h3 className="mt-4 text-base font-bold text-graphite">{f.t}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-graphite/65">{f.d}</p>
-            </div>
-          ))}
-        </div>
       </section>
     </div>
   );

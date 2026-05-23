@@ -28,19 +28,20 @@ export function MessagingWorkspace({
         )}
         style={{ borderRadius: 28 }}
       >
+        {/* RTL: שיחה ראשונה (ימין), רשימת inbox שנייה (שמאל) */}
+        <section className={cn("flex min-h-0 min-w-0 flex-1 flex-col", !threadOpen && "max-md:hidden")}>
+          {children}
+        </section>
+
         <aside
           className={cn(
-            "flex h-full w-full min-h-0 shrink-0 flex-col border-graphite/5 border-e bg-soft/30 md:w-[340px]",
+            "flex h-full w-full min-h-0 shrink-0 flex-col border-graphite/5 border-s bg-soft/30 md:w-[340px]",
             threadOpen && "max-md:hidden",
           )}
           aria-label={listAriaLabel}
         >
           {list}
         </aside>
-
-        <section className={cn("flex min-h-0 min-w-0 flex-1 flex-col", !threadOpen && "max-md:hidden")}>
-          {children}
-        </section>
       </div>
     </main>
   );

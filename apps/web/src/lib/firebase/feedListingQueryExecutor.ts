@@ -12,6 +12,8 @@ import {
   buildFeedListingFirestorePlan,
   feedLocationFilterQueryFields,
   listingFromFirestorePayload,
+  applyFeedSearchFilters,
+  feedSearchFiltersIsActive,
   listingMatchesFeedClientPostFilters,
   listingMatchesFeedLocationFilter,
   listingMatchesFeedSearchFilters,
@@ -111,7 +113,17 @@ async function fetchActiveListingsFallback(
     return true;
   });
 
-  return sortFeedListings(filtered, sortId);
+  return finalizeFeedListings(filtered, filters, sortId);
+}
+
+function finalizeFeedListings(
+  listings: RentalListing[],
+  filters: FeedSearchFilters | null,
+  sortId: FeedSortId,
+): RentalListing[] {
+  const matched =
+    filters && feedSearchFiltersIsActive(filters) ? applyFeedSearchFilters(listings, filters) : listings;
+  return sortFeedListings(matched, sortId);
 }
 
 export async function fetchActiveListingsWithPlan(
@@ -132,11 +144,7 @@ export async function fetchActiveListingsWithPlan(
       listings.push(listing);
     }
 
-    if (plan.clientPostFilter.resortBySort) {
-      return sortFeedListings(listings, sortId);
-    }
-
-    return listings;
+    return finalizeFeedListings(listings, filters, sortId);
   } catch (err) {
     if (!isFirestoreIndexOrQueryError(err)) {
       throw err;

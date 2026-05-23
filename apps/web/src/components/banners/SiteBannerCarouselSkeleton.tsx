@@ -4,9 +4,11 @@ import { cn } from "@/lib/utils";
 
 export function SiteBannerCarouselSkeleton({
   aspectRatio,
+  fixedHeightPx,
   className,
 }: {
   aspectRatio: number;
+  fixedHeightPx?: number;
   className?: string;
 }) {
   return (
@@ -19,7 +21,7 @@ export function SiteBannerCarouselSkeleton({
     >
       <div
         className="w-full animate-pulse bg-gradient-to-l from-brand/15 via-muted to-brand/10"
-        style={{ aspectRatio }}
+        style={fixedHeightPx != null ? { height: fixedHeightPx } : { aspectRatio }}
       />
     </div>
   );

@@ -62,9 +62,10 @@ export function SavedListingsClient() {
   }, [user]);
 
   return (
-    <main className="direction-rtl">
-      <div className="mx-auto min-w-0 max-w-[1280px]">
-        <h1 className="mb-2 text-3xl font-black text-graphite">{SAVED_LISTINGS_TITLE_HE}</h1>
+    <div className="direction-rtl min-w-0">
+        <h1 className="font-display mb-2 text-2xl font-semibold tracking-tight text-graphite md:text-3xl">
+          {SAVED_LISTINGS_TITLE_HE}
+        </h1>
         <p className="mb-6 text-sm text-graphite/60">{SAVED_LISTINGS_HINT_HE}</p>
 
         {!isFirebaseConfigured() ? <p className="text-sm text-graphite/60">אין חיבור לשרת.</p> : null}
@@ -110,7 +111,6 @@ export function SavedListingsClient() {
             return <ListingCard key={record.listingId} listing={{ ...listing, listingId: listing.id }} />;
           })}
         </div>
-      </div>
-    </main>
+    </div>
   );
 }

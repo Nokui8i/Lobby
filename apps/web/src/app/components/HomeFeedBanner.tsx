@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { FeedSearchBar } from "@/components/FeedSearchBar";
 import { HomeBannersSection } from "@/components/home/HomeBannersSection";
@@ -25,12 +25,12 @@ export function HomeFeedHero({
 
         <div id="feed-search" className="scroll-mt-24 space-y-1.5">
           <div
-            className="bubble-card overflow-visible rounded-[16px] border border-slate-200/90 p-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.05),0_4px_14px_rgba(15,23,42,0.07),0_12px_32px_rgba(15,23,42,0.06)] md:p-3"
+            className="relative z-10 overflow-visible rounded-[16px] border border-slate-200/90 bg-white p-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.05),0_4px_14px_rgba(15,23,42,0.07),0_12px_32px_rgba(15,23,42,0.06)] bubble-card md:p-3"
           >
             <FeedSearchBar appliedFilters={appliedFilters} onSearch={onSearch} loading={loading} embedded />
           </div>
           {sortRow ? (
-            <div className="flex justify-start px-0.5" dir="rtl">
+            <div className="relative z-0 flex justify-start px-0.5" dir="rtl">
               {sortRow}
             </div>
           ) : null}

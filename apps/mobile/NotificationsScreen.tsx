@@ -1,6 +1,7 @@
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -10,6 +11,8 @@ import {
 } from "react-native";
 import {
   buildSupportChatRouteId,
+  DELETE_ALL_NOTIFICATIONS_CONFIRM,
+  DELETE_ONE_NOTIFICATION_CONFIRM,
   formatChatMessageTime,
   formatNotificationBodyForDisplay,
   isMessagingNotificationKind,
@@ -19,10 +22,14 @@ import {
 import { getFirestoreDb } from "./lib/firebase/client";
 import { isFirebaseConfigured } from "./lib/firebase/isConfigured";
 import {
+  deleteAllMyNotifications,
+  deleteMyNotification,
   markAllNotificationsRead,
   markNotificationRead,
   subscribeMyNotifications,
 } from "./lib/firebase/notifications";
+import { LobbyConfirmModal } from "./components/LobbyConfirmModal";
+import { ListingSidebarBannersSection } from "./components/ListingSidebarBannersSection";
 import { useLobbyAuth } from "./lib/LobbyAuthContext";
 
 export function NotificationsScreen({
@@ -46,6 +53,9 @@ export function NotificationsScreen({
   const [items, setItems] = useState<LobbyInAppNotification[]>([]);
   const [listLoading, setListLoading] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
+  const [pendingDeleteOneId, setPendingDeleteOneId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user || !isFirebaseConfigured()) {
@@ -70,12 +80,42 @@ export function NotificationsScreen({
     [items],
   );
   const unreadIds = useMemo(() => visibleItems.filter((n) => !n.read).map((n) => n.id), [visibleItems]);
+  const allIds = useMemo(() => visibleItems.map((n) => n.id), [visibleItems]);
   const unreadCount = unreadIds.length;
+
+  const confirmDeleteAll = useCallback(() => {
+    if (allIds.length === 0 || deletingAll) {
+      return;
+    }
+    Alert.alert(DELETE_ALL_NOTIFICATIONS_CONFIRM.title, DELETE_ALL_NOTIFICATIONS_CONFIRM.body, [
+      { text: "ביטול", style: "cancel" },
+      {
+        text: DELETE_ALL_NOTIFICATIONS_CONFIRM.confirmLabel,
+        style: "default",
+        onPress: () => {
+          setDeletingAll(true);
+          void deleteAllMyNotifications(allIds).finally(() => setDeletingAll(false));
+        },
+      },
+    ]);
+  }, [allIds, deletingAll]);
+
+  const handleConfirmDeleteOne = useCallback(() => {
+    if (!pendingDeleteOneId || deletingId) {
+      return;
+    }
+    const id = pendingDeleteOneId;
+    setDeletingId(id);
+    void deleteMyNotification(id)
+      .then(() => setPendingDeleteOneId(null))
+      .finally(() => setDeletingId(null));
+  }, [deletingId, pendingDeleteOneId]);
 
   const handleOpen = useCallback(
     (item: LobbyInAppNotification) => {
       if (!item.read) {
         void markNotificationRead(item.id);
+        return;
       }
       const nav = resolveLobbyNotificationNavigation(item);
       if (!nav) {
@@ -150,42 +190,108 @@ export function NotificationsScreen({
           <Text style={styles.topAction}>סגירה</Text>
         </Pressable>
         <Text style={styles.topTitle}>התראות</Text>
-        {unreadCount > 0 ? (
-          <Pressable
-            onPress={() => {
-              if (markingAll) {
-                return;
-              }
-              setMarkingAll(true);
-              void markAllNotificationsRead(unreadIds).finally(() => setMarkingAll(false));
-            }}
-            accessibilityRole="button"
-            disabled={markingAll}
-          >
-            <Text style={styles.topMarkAll}>{markingAll ? "מסמן…" : "סמן הכל כנקרא"}</Text>
-          </Pressable>
+        {visibleItems.length > 0 ? (
+          <View style={styles.topActions}>
+            {unreadCount > 0 ? (
+              <Pressable
+                onPress={() => {
+                  if (markingAll || deletingAll) {
+                    return;
+                  }
+                  setMarkingAll(true);
+                  void markAllNotificationsRead(unreadIds).finally(() => setMarkingAll(false));
+                }}
+                accessibilityRole="button"
+                disabled={markingAll || deletingAll}
+              >
+                <Text style={styles.topMarkAll}>{markingAll ? "מסמן…" : "סמן הכל"}</Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              onPress={confirmDeleteAll}
+              accessibilityRole="button"
+              disabled={deletingAll || markingAll}
+            >
+              <Text style={styles.topDeleteAll}>{deletingAll ? "מוחק…" : "מחק הכל"}</Text>
+            </Pressable>
+          </View>
         ) : (
           <View style={styles.topSpacer} />
         )}
       </View>
-      <ScrollView contentContainerStyle={styles.scroll} bounces={false} showsVerticalScrollIndicator={false}>
-        {listLoading && visibleItems.length === 0 ? <Text style={styles.muted}>טוען…</Text> : null}
-        {!listLoading && visibleItems.length === 0 ? <Text style={styles.muted}>אין עדכונים.</Text> : null}
-        {visibleItems.map((item) => {
-          const timeLabel = item.createdAtMs > 0 ? formatChatMessageTime(item.createdAtMs) : "";
-          return (
-            <Pressable
-              key={item.id}
-              style={[styles.row, !item.read && styles.rowUnread]}
-              onPress={() => handleOpen(item)}
-            >
-              <Text style={styles.rowTitle}>{item.title}</Text>
-              <Text style={styles.rowBody}>{formatNotificationBodyForDisplay(item)}</Text>
-              {timeLabel ? <Text style={styles.rowTime}>{timeLabel}</Text> : null}
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      <View style={styles.bodyRow}>
+        <View style={styles.bannerSide}>
+          <ListingSidebarBannersSection maxCardWidth={128} />
+        </View>
+        <View style={styles.panel}>
+          <ScrollView
+            style={styles.panelScroll}
+            contentContainerStyle={styles.scroll}
+            bounces
+            showsVerticalScrollIndicator
+            nestedScrollEnabled
+          >
+            {listLoading && visibleItems.length === 0 ? <Text style={styles.muted}>טוען…</Text> : null}
+            {!listLoading && visibleItems.length === 0 ? <Text style={styles.muted}>אין עדכונים.</Text> : null}
+            {visibleItems.map((item) => {
+              const timeLabel = item.createdAtMs > 0 ? formatChatMessageTime(item.createdAtMs) : "";
+              const bodyText = formatNotificationBodyForDisplay(item);
+              const deleting = deletingId === item.id;
+              return (
+                <View
+                  key={item.id}
+                  style={[styles.row, !item.read && styles.rowUnread, styles.rowWithDelete]}
+                >
+                  <Pressable
+                    style={styles.rowMain}
+                    onPress={() => handleOpen(item)}
+                    disabled={deleting}
+                  >
+                    <View style={styles.rowHeader}>
+                      <Text style={styles.rowTitle} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                      {timeLabel ? <Text style={styles.rowTimeInline}>{timeLabel}</Text> : null}
+                    </View>
+                    {bodyText ? (
+                      <Text style={styles.rowBody} numberOfLines={2}>
+                        {bodyText}
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                  <Pressable
+                    style={styles.rowDeleteBtn}
+                    onPress={() => {
+                      if (deletingId || pendingDeleteOneId) {
+                        return;
+                      }
+                      setPendingDeleteOneId(item.id);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel="מחק התראה"
+                    disabled={deleting}
+                  >
+                    <Text style={styles.rowDeleteIcon}>{deleting ? "…" : "×"}</Text>
+                  </Pressable>
+                </View>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </View>
+      <LobbyConfirmModal
+        visible={pendingDeleteOneId !== null}
+        title={DELETE_ONE_NOTIFICATION_CONFIRM.title}
+        body={DELETE_ONE_NOTIFICATION_CONFIRM.body}
+        confirmLabel={DELETE_ONE_NOTIFICATION_CONFIRM.confirmLabel}
+        busy={deletingId !== null}
+        onCancel={() => {
+          if (deletingId === null) {
+            setPendingDeleteOneId(null);
+          }
+        }}
+        onConfirm={handleConfirmDeleteOne}
+      />
     </SafeAreaView>
   );
 }
@@ -202,10 +308,38 @@ const styles = StyleSheet.create({
     borderBottomColor: "#e4e5e7",
   },
   topAction: { fontSize: 15, fontWeight: "700", color: "#202125", minWidth: 56, textAlign: "right" },
-  topMarkAll: { fontSize: 13, fontWeight: "800", color: "#0799a7", minWidth: 56, textAlign: "left" },
+  topActions: { flexDirection: "row", alignItems: "center", gap: 10, minWidth: 56 },
+  topMarkAll: { fontSize: 13, fontWeight: "800", color: "#0799a7", textAlign: "left" },
+  topDeleteAll: { fontSize: 13, fontWeight: "800", color: "#64748b", textAlign: "left" },
   topTitle: { fontSize: 18, fontWeight: "800", color: "#202125" },
   topSpacer: { minWidth: 56 },
-  scroll: { padding: 14, paddingBottom: 28, gap: 10 },
+  bodyRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    paddingHorizontal: 8,
+    paddingBottom: 12,
+  },
+  bannerSide: {
+    width: 128,
+    flexShrink: 0,
+    alignItems: "center",
+    paddingTop: 4,
+  },
+  panel: {
+    flex: 1,
+    minWidth: 0,
+    flexShrink: 1,
+    maxHeight: 480,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(16,24,32,0.08)",
+    backgroundColor: "#fff",
+    overflow: "hidden",
+  },
+  panelScroll: { flexGrow: 0 },
+  scroll: { padding: 10, paddingBottom: 16, gap: 8 },
   muted: { textAlign: "right", paddingVertical: 16, fontSize: 15, fontWeight: "700", color: "#64748b" },
   primaryBtn: {
     margin: 20,
@@ -216,21 +350,50 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: { color: "#fff", fontWeight: "900", fontSize: 15 },
   row: {
-    padding: 14,
-    borderRadius: 18,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(16,24,32,0.08)",
     backgroundColor: "#fff",
+    overflow: "hidden",
+  },
+  rowWithDelete: {
+    flexDirection: "row",
+    alignItems: "stretch",
+  },
+  rowMain: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+  },
+  rowDeleteBtn: {
+    width: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    borderLeftWidth: 1,
+    borderLeftColor: "rgba(16,24,32,0.08)",
+  },
+  rowDeleteIcon: {
+    fontSize: 20,
+    lineHeight: 22,
+    fontWeight: "400",
+    color: "#94a3b8",
   },
   rowUnread: { borderColor: "rgba(8,184,200,0.28)", backgroundColor: "rgba(232,251,253,0.45)" },
-  rowTitle: { textAlign: "right", fontSize: 15, fontWeight: "800", color: "#202125" },
+  rowHeader: {
+    flexDirection: "row-reverse",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  rowTitle: { flex: 1, textAlign: "right", fontSize: 15, fontWeight: "600", color: "#202125", lineHeight: 20 },
   rowBody: {
     marginTop: 6,
     textAlign: "right",
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "400",
     color: "#64748b",
-    lineHeight: 20,
+    lineHeight: 18,
   },
-  rowTime: { marginTop: 8, textAlign: "right", fontSize: 12, fontWeight: "700", color: "#8b949b" },
+  rowTimeInline: { fontSize: 11, fontWeight: "500", color: "#8b949b", paddingTop: 2 },
 });

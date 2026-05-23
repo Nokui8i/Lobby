@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   formatListingLocationLine,
-  LISTING_OWNER_ACTION_BOOST_INFO_HE,
   LISTING_OWNER_ACTION_CONFIRM_HE,
   LISTING_OWNER_ACTION_LABEL_HE,
   LISTING_STATUS_LABEL_HE,
@@ -40,7 +39,9 @@ const acc = {
   menuItemDanger: "!text-red-700 hover:!bg-red-500/10",
   thumb: "relative h-20 w-28 overflow-hidden rounded-lg bg-soft [&_img]:h-full [&_img]:w-full [&_img]:object-cover",
   body: "min-w-0 text-right",
-  rowTitle: "truncate text-sm font-semibold text-graphite",
+  rowTitleRow: "flex w-full min-w-0 items-baseline justify-start gap-2",
+  rowTitle: "min-w-0 shrink truncate text-sm font-semibold text-graphite",
+  rowPrice: "shrink-0 whitespace-nowrap text-sm font-bold text-brand",
   rowMeta: "mt-0.5 text-xs text-graphite/50",
   statusPill: "inline-block rounded-full bg-soft px-2.5 py-0.5 text-[11px] font-semibold text-graphite/70",
   statusPillActive: "!bg-emerald-50 !text-emerald-700",
@@ -189,16 +190,6 @@ export function AccountListingRow({
         router.push(`/publish?listingId=${listing.id}`);
         return;
       }
-      if (action === "boost") {
-        setPendingDialog({
-          kind: "info",
-          title: LISTING_OWNER_ACTION_BOOST_INFO_HE.title,
-          body: LISTING_OWNER_ACTION_BOOST_INFO_HE.body,
-          confirmLabel: LISTING_OWNER_ACTION_BOOST_INFO_HE.confirmLabel ?? "הבנתי",
-        });
-        return;
-      }
-
       const confirmCopy = LISTING_OWNER_ACTION_CONFIRM_HE[action];
       if (confirmCopy) {
         setPendingDialog({
@@ -253,10 +244,11 @@ export function AccountListingRow({
             <Image src={listing.imageUrl} alt="" width={176} height={144} />
           </div>
           <div className={acc.body}>
-            <div className={acc.rowTitle}>{listing.title}</div>
-            <div className={acc.rowMeta}>
-              ₪{listing.priceIls.toLocaleString("he-IL")} · {formatListingLocationLine(listing)}
+            <div className={acc.rowTitleRow}>
+              <span className={acc.rowTitle}>{listing.title}</span>
+              <span className={acc.rowPrice}>₪{listing.priceIls.toLocaleString("he-IL")}</span>
             </div>
+            <div className={acc.rowMeta}>{formatListingLocationLine(listing)}</div>
             <span className={statusPillClass(listing.status)}>{LISTING_STATUS_LABEL_HE[listing.status]}</span>
             {publishCountdown ? (
               <p

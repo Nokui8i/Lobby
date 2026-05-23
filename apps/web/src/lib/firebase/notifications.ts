@@ -2,6 +2,7 @@ import type { Firestore } from "firebase/firestore";
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   limit,
@@ -98,6 +99,29 @@ export async function markAllNotificationsRead(notificationIds: string[]): Promi
     batch.update(doc(db, NOTIFICATIONS_COLLECTION, id), { read: true });
   }
   await batch.commit();
+}
+
+const NOTIFICATION_DELETE_BATCH_SIZE = 500;
+
+/** מוחק את כל ההתראות של המשתמש מהרשימה (באצוות Firestore). */
+export async function deleteMyNotification(notificationId: string): Promise<void> {
+  const db = getFirestoreDb();
+  await deleteDoc(doc(db, NOTIFICATIONS_COLLECTION, notificationId));
+}
+
+export async function deleteAllMyNotifications(notificationIds: string[]): Promise<void> {
+  if (notificationIds.length === 0) {
+    return;
+  }
+  const db = getFirestoreDb();
+  for (let offset = 0; offset < notificationIds.length; offset += NOTIFICATION_DELETE_BATCH_SIZE) {
+    const chunk = notificationIds.slice(offset, offset + NOTIFICATION_DELETE_BATCH_SIZE);
+    const batch = writeBatch(db);
+    for (const id of chunk) {
+      batch.delete(doc(db, NOTIFICATIONS_COLLECTION, id));
+    }
+    await batch.commit();
+  }
 }
 
 export async function saveExpoPushToken(uid: string, token: string): Promise<void> {

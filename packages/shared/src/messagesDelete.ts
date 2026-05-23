@@ -12,6 +12,18 @@ export const DELETE_SUPPORT_INQUIRY_CONFIRM = {
   confirmLabel: "מחקו פנייה",
 } as const;
 
+export const DELETE_ALL_NOTIFICATIONS_CONFIRM = {
+  title: "מחיקת כל ההתראות",
+  body: "כל ההתראות ברשימה יימחקו מהחשבון שלכם. לא ניתן לשחזר אותן.",
+  confirmLabel: "מחק הכל",
+} as const;
+
+export const DELETE_ONE_NOTIFICATION_CONFIRM = {
+  title: "מחיקת התראה",
+  body: "האם למחוק את ההתראה הזו? לא ניתן לשחזר אותה.",
+  confirmLabel: "מחק",
+} as const;
+
 export function isChatThreadHiddenForUser(deletedByUids: unknown, userId: string): boolean {
   return Array.isArray(deletedByUids) && deletedByUids.some((id) => typeof id === "string" && id === userId);
 }

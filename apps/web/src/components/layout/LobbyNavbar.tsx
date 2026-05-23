@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, Plus, User } from "lucide-react";
+import { ACCOUNT_MESSAGES_BASE_PATH, isAccountMessagesPath } from "@lobby/shared";
 import { useLobbyAuth } from "@/contexts/LobbyAuthContext";
 import { useChatInboxOptional } from "@/contexts/ChatInboxContext";
 import { isFirebaseConfigured } from "@/lib/firebase/isConfigured";
@@ -69,6 +70,7 @@ function LobbyTypewriterWordmark({ className }: { className?: string }) {
 
 function isImmersiveRoute(pathname: string) {
   return (
+    isAccountMessagesPath(pathname) ||
     pathname === "/chat" ||
     pathname.startsWith("/chat/") ||
     pathname === "/support" ||
@@ -82,7 +84,7 @@ export function LobbyNavbar() {
   const { user, loading, openAuthModal } = useLobbyAuth();
   const inbox = useChatInboxOptional();
   const immersive = isImmersiveRoute(pathname);
-  const chatActive = pathname.startsWith("/chat");
+  const chatActive = isAccountMessagesPath(pathname) || pathname.startsWith("/chat");
   const accountActive = pathname === "/account" || pathname.startsWith("/account/");
   const unread = inbox?.totalUnread ?? 0;
 
@@ -137,7 +139,7 @@ export function LobbyNavbar() {
 
   const chatLink = (
     <Link
-      href="/chat"
+      href={ACCOUNT_MESSAGES_BASE_PATH}
       className={cn(neutralPillBtn, chatActive && "border-slate-300 bg-soft")}
       aria-label="הצ׳אטים שלי"
     >
@@ -155,7 +157,7 @@ export function LobbyNavbar() {
     <header
       style={{ height: "var(--header-height)" }}
       className={cn(
-        "sticky top-0 z-50 w-full shrink-0 bg-white",
+        "sticky top-0 z-[100] w-full shrink-0 bg-white",
         immersive
           ? "border-b border-[var(--lobby-border)]"
           : "shadow-[0_2px_10px_rgba(15,23,42,0.08)]",

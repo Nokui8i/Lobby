@@ -7,6 +7,7 @@ import {
   createOptimisticMessageId,
   formatChatMessageTime,
   formatLobbySendError,
+  accountMessagesIndexPath,
   logLobbyError,
   supportInquiryIsOpen,
 } from "@lobby/shared";
@@ -43,7 +44,7 @@ interface SupportThreadClientProps {
 }
 
 export function SupportThreadClient({ inquiryId }: SupportThreadClientProps) {
-  const { user, loading, openAuthModal } = useLobbyAuth();
+  const { user, loading, openAuthModal, displayNameForUi } = useLobbyAuth();
   const [inquiry, setInquiry] = useState<SupportInquirySummary | null | undefined>(undefined);
   const [messages, setMessages] = useState<SupportInquiryMessageRow[]>([]);
   const [pendingMessages, setPendingMessages] = useState<SupportInquiryMessageRow[]>([]);
@@ -199,7 +200,7 @@ export function SupportThreadClient({ inquiryId }: SupportThreadClientProps) {
       <ChatPanelShell className="items-center justify-center gap-3 p-8 text-center" role="region" aria-label="פנייה">
         <p className="text-sm">אין גישה לפנייה הזאת.</p>
         <Button variant="outline" asChild>
-          <Link href="/chat">חזרה להודעות</Link>
+          <Link href={accountMessagesIndexPath()}>חזרה להודעות</Link>
         </Button>
       </ChatPanelShell>
     );
@@ -216,7 +217,7 @@ export function SupportThreadClient({ inquiryId }: SupportThreadClientProps) {
       {inquiry ? (
         <ChatPanelShell role="region" aria-label="פנייה לתמיכה">
           <ChatThreadHeader
-            backHref="/chat"
+            backHref={accountMessagesIndexPath()}
             title={inquiry.subject || "תמיכה"}
             subtitle="פנייה לצוות Lobby"
             actions={
@@ -233,8 +234,14 @@ export function SupportThreadClient({ inquiryId }: SupportThreadClientProps) {
             {displayMessages.map((message) => {
               const mine = message.senderRole === "user";
               const timeLabel = formatChatMessageTime(message.createdAt);
+              const senderName = mine ? displayNameForUi.trim() || "אתם" : "תמיכת Lobby";
               return (
-                <ChatMessageBubble key={message.id} mine={mine} timeLabel={timeLabel || undefined}>
+                <ChatMessageBubble
+                  key={message.id}
+                  mine={mine}
+                  senderName={senderName}
+                  timeLabel={timeLabel || undefined}
+                >
                   {message.text}
                 </ChatMessageBubble>
               );

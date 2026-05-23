@@ -35,6 +35,10 @@ export function feedLocationFilterSummary(location: ResolvedLocation): string {
   return resolvedLocationDisplayLine(location);
 }
 
+export function normalizeFeedLocationLabel(value: string): string {
+  return value.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 /** התאמה לקוחית (מודעות ישנות / שדות חסרים) */
 export function listingMatchesFeedLocationFilter(
   listing: RentalListing,
@@ -42,8 +46,19 @@ export function listingMatchesFeedLocationFilter(
 ): boolean {
   const fields = feedLocationFilterQueryFields(filter);
   const listingCityId = listing.cityPlaceId?.trim();
-  if (!listingCityId || listingCityId !== fields.cityPlaceId) {
+
+  if (listingCityId) {
+    if (listingCityId !== fields.cityPlaceId) {
+      return false;
+    }
+  } else if (fields.streetPlaceId || fields.neighborhoodPlaceId || fields.areaPlaceId) {
     return false;
+  } else {
+    const filterCity = normalizeFeedLocationLabel(filter.cityLabel);
+    const listingCity = normalizeFeedLocationLabel(listing.city);
+    if (!filterCity || !listingCity || filterCity !== listingCity) {
+      return false;
+    }
   }
   if (fields.streetPlaceId) {
     const streetId = listing.streetPlaceId?.trim() || listing.placeId?.trim();

@@ -24,9 +24,10 @@ const HORIZONTAL_PAD = 20;
 /** מעט קטן יותר מרוחב המסך הפחות padding */
 const COMMERCIAL_BANNER_WIDTH_SCALE = 0.94;
 
-function useSidebarBannerDimensions() {
+function useSidebarBannerDimensions(maxCardWidth?: number) {
   const { width: screenWidth } = useWindowDimensions();
-  const cardWidth = Math.round((screenWidth - HORIZONTAL_PAD * 2) * COMMERCIAL_BANNER_WIDTH_SCALE);
+  const raw = Math.round((screenWidth - HORIZONTAL_PAD * 2) * COMMERCIAL_BANNER_WIDTH_SCALE);
+  const cardWidth = maxCardWidth != null ? Math.min(raw, maxCardWidth) : raw;
   const cardHeight = Math.round(cardWidth / LISTING_SIDEBAR_BANNER_ASPECT);
   return { cardWidth, cardHeight };
 }
@@ -74,8 +75,9 @@ function SidebarBannerSlide({
   );
 }
 
-export function ListingSidebarBannersSection() {
-  const { cardWidth, cardHeight } = useSidebarBannerDimensions();
+export function ListingSidebarBannersSection({ maxCardWidth }: { maxCardWidth?: number } = {}) {
+  const { cardWidth, cardHeight } = useSidebarBannerDimensions(maxCardWidth);
+  const compact = maxCardWidth != null;
   const [bundle, setBundle] = useState<{
     slides: HomeBannerSlide[];
     initialIndex: number;
@@ -111,7 +113,13 @@ export function ListingSidebarBannersSection() {
 
   if (bundle.slides.length === 1) {
     return (
-      <View style={{ paddingHorizontal: HORIZONTAL_PAD, marginTop: 12, alignItems: 'center' }}>
+      <View
+        style={{
+          paddingHorizontal: compact ? 0 : HORIZONTAL_PAD,
+          marginTop: compact ? 0 : 12,
+          alignItems: 'center',
+        }}
+      >
         <SidebarBannerSlide slide={bundle.slides[0]!} cardWidth={cardWidth} cardHeight={cardHeight} />
       </View>
     );
@@ -124,6 +132,7 @@ export function ListingSidebarBannersSection() {
       initialIndex={bundle.initialIndex}
       cardWidth={cardWidth}
       cardHeight={cardHeight}
+      compact={compact}
     />
   );
 }
@@ -133,11 +142,13 @@ function ListingSidebarBannerCarousel({
   initialIndex,
   cardWidth,
   cardHeight,
+  compact = false,
 }: {
   slides: HomeBannerSlide[];
   initialIndex: number;
   cardWidth: number;
   cardHeight: number;
+  compact?: boolean;
 }) {
   const scrollRef = useRef<ScrollView>(null);
   const total = slides.length;
@@ -168,7 +179,7 @@ function ListingSidebarBannerCarousel({
   }, [index, total, cardWidth]);
 
   return (
-    <View style={{ alignItems: 'center', marginTop: 12 }}>
+    <View style={{ alignItems: 'center', marginTop: compact ? 0 : 12 }}>
       <ScrollView
         ref={scrollRef}
         horizontal

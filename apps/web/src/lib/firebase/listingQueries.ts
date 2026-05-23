@@ -3,6 +3,8 @@ import type { FeedSearchFilters, FeedSortId, RentalListing } from "@lobby/shared
 import {
   DEFAULT_FEED_SORT_ID,
   LISTINGS_COLLECTION,
+  getHomeFeedDemoListingById,
+  isHomeFeedDemoEnabled,
   listingFromFirestorePayload,
 } from "@lobby/shared";
 import { getFirestoreDb } from "./client";
@@ -55,6 +57,13 @@ export async function fetchActiveListingsFromFirestore(
 }
 
 export async function fetchListingByIdFromFirestore(listingId: string): Promise<RentalListing | null> {
+  if (isHomeFeedDemoEnabled()) {
+    const demo = getHomeFeedDemoListingById(listingId);
+    if (demo) {
+      return demo;
+    }
+  }
+
   const db = getFirestoreDb();
   const docRef = doc(db, LISTINGS_COLLECTION, listingId);
   const docSnap = await getDoc(docRef);
